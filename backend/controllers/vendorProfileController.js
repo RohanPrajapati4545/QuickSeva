@@ -1,15 +1,32 @@
-const bcrypt = require("bcrypt"); 
-const User = require("../models/userSchema");  
-const fs = require("fs");
-const path = require("path");
+const bcrypt = require("bcrypt");
+const User = require("../models/userSchema");
+const cloudinary = require("cloudinary").v2;
 
-const removeFile = (relativePath) => {
-  if (!relativePath) return;
-  const fullPath = path.join(process.cwd(), relativePath.replace(/^\//, ""));
-  fs.unlink(fullPath, () => {});  
+// Extracts the Cloudinary public_id from a stored secure_url so we can
+// delete the actual asset from Cloudinary (not from local disk).
+const getPublicIdFromUrl = (url) => {
+  if (!url || !/^https?:\/\//i.test(url)) return null;
+  try {
+    const parts = url.split("/upload/")[1]; // e.g. v12345/uploads/abc123.jpg
+    if (!parts) return null;
+    const withoutVersion = parts.replace(/^v\d+\//, ""); // uploads/abc123.jpg
+    const withoutExt = withoutVersion.replace(/\.[^/.]+$/, ""); // uploads/abc123
+    return withoutExt;
+  } catch {
+    return null;
+  }
 };
 
- 
+const removeFile = async (imageUrl) => {
+  const publicId = getPublicIdFromUrl(imageUrl);
+  if (!publicId) return;
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (err) {
+    console.log("Cloudinary delete failed:", err.message);
+  }
+};
+
 const getProfile = async (req, res) => {
   try {
     const vendorId = req.user.id;
@@ -40,8 +57,8 @@ const updateProfile = async (req, res) => {
     const updateData = { name, phone, shop_name, address };
 
     if (req.file) {
-      updateData.image = `/uploads/${req.file.filename}`;
-      removeFile(existing.image); // purani image hata do
+      updateData.image = req.file.path; // Cloudinary secure URL
+      await removeFile(existing.image); // purani Cloudinary image delete karo
     }
 
     const updatedUser = await User.findByIdAndUpdate(vendorId, updateData, {

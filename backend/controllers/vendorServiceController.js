@@ -31,7 +31,7 @@ const addService = async (req, res) => {
       });
     }
 
-    const image = req.file ? `/uploads/${req.file.filename}` : "";
+const image = req.file ? req.file.path : ""; 
 
     const service = await VendorService.create({
       vendor: vendorId,

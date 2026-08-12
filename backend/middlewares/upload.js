@@ -12,7 +12,7 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "uploads", // cloudinary account me folder ka naam
-    allowed_formats: ["jpg", "png", "jpeg", "pdf", "mp4"], // apni need ke hisaab se
+    allowed_formats: ["jpg", "png", "jpeg", "pdf", "mp4", "webp"], // apni need ke hisaab se
     public_id: (req, file) => {
       return Date.now() + "-" + Math.round(Math.random() * 1e9);
     },
