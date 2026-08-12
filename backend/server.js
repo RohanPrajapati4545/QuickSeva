@@ -8,12 +8,11 @@ require("./config/db");
 const app = express();
 
 app.disable("etag");
-
 const corsOption = {
   origin: [
     "http://localhost:3000",
     "http://localhost:5173",
-    "https://quickseva-po6k.onrender.com",
+    "https://quick-seva-git-main-rohanprajjapati-5449s-projects.vercel.app",
     process.env.CLIENT_URL,
   ].filter(Boolean),
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
