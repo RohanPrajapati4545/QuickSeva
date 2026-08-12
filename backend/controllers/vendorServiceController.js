@@ -1,4 +1,4 @@
-const VendorService = require("../models/VendorServiceSchema");
+const VendorService = require("../models/vendorServiceSchema");
 const fs = require("fs");
 const path = require("path");
 

@@ -1,5 +1,5 @@
-const Booking = require("../models/BookingSchema");
-const VendorService = require("../models/VendorServiceSchema");
+const Booking = require("../models/bookingSchema");
+const VendorService = require("../models/vendorServiceSchema");
 
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 

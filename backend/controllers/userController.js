@@ -1,7 +1,7 @@
-const VendorCategory = require("../models/VendorCategorySchema");
-const VendorService = require("../models/VendorServiceSchema");
-const User = require("../models/UserSchema");
-const Booking = require("../models/BookingSchema");
+const VendorCategory = require("../models/vendorCategorySchema");
+const VendorService = require("../models/vendorServiceSchema");
+const User = require("../models/userSchema");
+const Booking = require("../models/bookingSchema");
 
 const slugify = (str) =>
   (str || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");

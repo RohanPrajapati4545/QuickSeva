@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const VendorBookingController = require("../controllers/VendorBookingController");
+const VendorBookingController = require("../controllers/vendorBookingController");
 // NOTE: match this import to whatever middleware your vendor-service route
 // already uses to verify the vendor's token / attach req.user
 const AuthMiddleware=require("./../middlewares/AuthMiddleware")

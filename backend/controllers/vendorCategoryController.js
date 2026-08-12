@@ -1,4 +1,4 @@
-const VendorCategory = require("../models/VendorCategorySchema");
+const VendorCategory = require("../models/vendorCategorySchema");
 
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
