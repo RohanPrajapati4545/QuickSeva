@@ -33,7 +33,7 @@ const {
   getServiceById,
   updateServiceApproval,
   deleteService,
-} = require("../controllers/adminController");
+} = require("../controllers/AdminController");
 
 router.get("/dashboard-summary", authMiddleware, adminMiddleware, getDashboardSummary);
 
