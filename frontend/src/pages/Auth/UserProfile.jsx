@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { updateUser } from "./../pages/Redux/AuthSlice";
+import { updateUser } from "./../Redux/AuthSlice";
 
 const PROFILE_API = `${process.env.REACT_APP_API_URL}/api/user-profile`;
 const BASE_URL = process.env.REACT_APP_API_URL;
