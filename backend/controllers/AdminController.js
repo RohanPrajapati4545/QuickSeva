@@ -1,7 +1,7 @@
 const User = require("../models/userSchema");
 const Booking = require("../models/bookingSchema");
 const VendorCategory = require("../models/vendorCategorySchema");
-const VendorService = require("../models/VendorServiceSchema");
+const VendorService = require("../models/vendorServiceSchema");
 
 const toClientUser = (userDoc) => {
   const obj = userDoc.toObject ? userDoc.toObject() : userDoc;
@@ -160,9 +160,7 @@ const updateUserStatus = async (req, res) => {
   }
 };
 
-// Admin edit of a customer's profile fields (name, phone, address, avatar).
-// Expects multipart/form-data when an image is included (req.file via
-// upload.single("image")); works fine without a file too.
+ 
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
