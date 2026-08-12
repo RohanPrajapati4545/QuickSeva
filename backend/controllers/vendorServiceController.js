@@ -113,10 +113,10 @@ const updateService = async (req, res) => {
       approvalStatus: "pending",
     };
 
-    if (req.file) {
-      updateData.image = `/uploads/${req.file.filename}`;
-      removeFile(existing.image);
-    }
+  if (req.file) {
+  updateData.image = req.file.path;  
+  removeFile(existing.image);
+}
 
     const updatedService = await VendorService.findOneAndUpdate(
       { _id: id, vendor: vendorId },
