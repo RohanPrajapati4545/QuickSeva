@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useDispatch, useSelector } from "react-redux";
+import {   useSelector } from "react-redux";
 import { toast } from "react-toastify";
 
 // NOTE: agar aapki AuthSlice me user update karne wala action hai
@@ -20,7 +20,7 @@ const getImageUrl = (imagePath) => {
 };
 
 const VendorProfile = () => {
-  const dispatch = useDispatch();
+ 
   const { token } = useSelector((state) => state.auth || {});
 
   const authHeaders = { headers: { Authorization: `Bearer ${token}` } };

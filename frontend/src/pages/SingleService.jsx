@@ -21,7 +21,7 @@ const SingleService = () => {
 
   // ⚠️ ADJUST THIS: apne redux store ke actual slice/path se match karo.
   // Common patterns: state.auth.user, state.auth.token, state.user.currentUser
-  const { user, token } = useSelector((state) => state.auth);
+  const {  token } = useSelector((state) => state.auth);
    
 
   const [service, setService] = useState(null);

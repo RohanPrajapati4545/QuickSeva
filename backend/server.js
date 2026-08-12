@@ -6,22 +6,27 @@ const cors = require("cors");
 require("./config/db");
 
 const app = express();
+
 app.disable("etag");
 
 const corsOption = {
   origin: [
     "http://localhost:3000",
     "http://localhost:5173",
+    "https://quickseva-po6k.onrender.com",
     process.env.CLIENT_URL,
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  ].filter(Boolean),
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   credentials: true,
 };
 
 app.use(cors(corsOption));
+
 app.use(express.json());
+
 app.use("/uploads", express.static("uploads"));
 
+// Routes
 const AuthRoute = require("./routes/AuthRoute");
 const VendorCategoryRoute = require("./routes/vendorCategoryRoute");
 const VendorServiceRoute = require("./routes/vendorServiceRoute");

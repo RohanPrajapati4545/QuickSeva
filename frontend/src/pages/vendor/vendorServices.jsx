@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import Swal from "sweetalert2";
+ 
 
 const SERVICE_API = `${process.env.REACT_APP_API_URL}/api/vendor-service`;
 const BASE_URL = process.env.REACT_APP_API_URL;
@@ -74,27 +74,7 @@ const VendorServices = () => {
   const goToDetails = (service) => {
     navigate(`/vendor/services/${service._id}`, { state: { service } });
   };
-
-  const handleDelete = async (service) => {
-    const result = await Swal.fire({
-      title: `Delete "${service.service_name}"?`,
-      text: "This can't be undone.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Delete",
-      confirmButtonColor: "#DC2626",
-    });
-    if (!result.isConfirmed) return;
-
-    try {
-      await axios.delete(`${SERVICE_API}/delete-service/${service._id}`, authHeaders);
-      toast.success("Service deleted");
-      setServices((prev) => prev.filter((s) => s._id !== service._id));
-    } catch (error) {
-      toast.error(error.response?.data?.msg || "Could not delete service");
-    }
-  };
-
+ 
   const filteredServices =
     statusFilter === "all"
       ? services
