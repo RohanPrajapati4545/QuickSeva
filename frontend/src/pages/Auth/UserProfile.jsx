@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import { updateUser } from "./../pages/Redux/AuthSlice";
 
- 
 const PROFILE_API = `${process.env.REACT_APP_API_URL}/api/user-profile`;
 const BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -17,13 +17,13 @@ const getImageUrl = (imagePath) => {
 
 const UserProfile = () => {
   const { token } = useSelector((state) => state.auth || {});
+  const dispatch = useDispatch();
 
   const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
 
   const [form, setForm] = useState({
     name: "",
     email: "",
-     
     address: "",
   });
   const [imageFile, setImageFile] = useState(null);
@@ -49,7 +49,6 @@ const UserProfile = () => {
       setForm({
         name: u.name || "",
         email: u.email || "",
-        
         address: u.address || "",
       });
       setExistingImage(u.image || "");
@@ -79,7 +78,6 @@ const UserProfile = () => {
     try {
       const fd = new FormData();
       fd.append("name", form.name);
-       
       fd.append("address", form.address);
       if (imageFile) fd.append("image", imageFile);
 
@@ -95,7 +93,7 @@ const UserProfile = () => {
       setImageFile(null);
       setImagePreview(null);
 
-      // dispatch(setUser(res.data.user));
+      dispatch(updateUser(res.data.user));
     } catch (error) {
       toast.error(error.response?.data?.msg || "Could not update profile");
     } finally {
@@ -223,7 +221,6 @@ const UserProfile = () => {
                   className="up-body w-full cursor-not-allowed rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3.5 py-2.5 text-sm text-[#6B7280]"
                 />
               </div>
-              
             </div>
 
             <div className="mt-4">
