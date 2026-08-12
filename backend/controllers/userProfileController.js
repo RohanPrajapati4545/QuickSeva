@@ -33,11 +33,9 @@ const updateProfile = async (req, res) => {
     if (phone !== undefined) user.phone = phone;
     if (address !== undefined) user.address = address;
 
-    // NOTE: agar aap multer use kar rahe ho (jaisa vendor-profile me hoga),
-    // uploaded file ka path yahan set karna, e.g.:
-    if (req.file) {
-      user.image = `/uploads/${req.file.filename}`;
-    }
+  if (req.file) {
+  user.image = req.file.path;  
+}
 
     await user.save();
 
