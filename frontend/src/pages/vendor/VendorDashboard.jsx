@@ -15,12 +15,53 @@ const STAT_ICONS = {
   rating: "fa-star",
 };
 
+// Small dashboard-top banner reflecting the vendor's own approval status.
+// Only rendered when the vendor isn't approved yet (pending/rejected) —
+// approved vendors don't need to see this.
+const ApprovalStatusBanner = ({ approvalStatus }) => {
+  const isRejected = approvalStatus === "rejected";
+
+  return (
+    <div
+      className={`vdd-body mb-5 flex items-start gap-3 rounded-2xl border px-4 py-3.5 sm:items-center ${
+        isRejected
+          ? "border-red-200 bg-red-50 text-red-700"
+          : "border-yellow-200 bg-yellow-50 text-yellow-800"
+      }`}
+    >
+      <span
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+          isRejected ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-600"
+        }`}
+      >
+        <i className={`fa-solid ${isRejected ? "fa-circle-xmark" : "fa-hourglass-half"} text-xs`}></i>
+      </span>
+      <p className="text-xs font-medium leading-relaxed sm:text-sm">
+        {isRejected ? (
+          <>
+            <span className="font-bold">Account rejected. </span>
+            Admin has rejected your vendor account, so services can't be added or approved. Please contact support.
+          </>
+        ) : (
+          <>
+            <span className="font-bold">Approval pending. </span>
+            Your account is awaiting admin approval — you'll be able to add services once it's approved.
+          </>
+        )}
+      </p>
+    </div>
+  );
+};
+
 const VendorDashboard = () => {
   const { token, user } = useSelector((state) => state.auth || {});
   const navigate = useNavigate();
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const vendorApprovalStatus = user?.approvalStatus || "pending";
+  const isVendorApproved = vendorApprovalStatus === "approved";
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +114,8 @@ const VendorDashboard = () => {
         @keyframes vddSpin { to { transform: rotate(360deg); } }
         .vdd-spin { animation: vddSpin 0.8s linear infinite; }
       `}</style>
+
+      {!isVendorApproved && <ApprovalStatusBanner approvalStatus={vendorApprovalStatus} />}
 
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">

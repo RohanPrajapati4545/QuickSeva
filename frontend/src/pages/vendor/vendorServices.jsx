@@ -23,8 +23,53 @@ const APPROVAL_STYLES = {
   rejected: "bg-red-50 text-red-500",
 };
 
+// Shown in place of the whole page when the vendor's own account hasn't
+// been approved by admin yet — mirrors the empty-state / dashboard visual
+// language used elsewhere in the vendor panel.
+const VendorNotApprovedNotice = ({ approvalStatus }) => {
+  const isRejected = approvalStatus === "rejected";
+
+  return (
+    <div className="vs-body text-[#1F2937]">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+        .vs-display { font-family: 'Sora', system-ui, sans-serif; }
+        .vs-body { font-family: 'Inter', system-ui, sans-serif; }
+        .vs-card { border-radius: 16px; }
+      `}</style>
+
+      <div>
+        <h1 className="vs-display text-2xl font-extrabold sm:text-3xl">Services</h1>
+        <p className="vs-body mt-1 text-sm text-[#6B7280]">
+          Manage the services you offer to customers.
+        </p>
+      </div>
+
+      <div className="vs-card mt-5 flex flex-col items-center justify-center gap-3 border border-[#E5E7EB] bg-white px-6 py-16 text-center">
+        <span
+          className={`flex h-14 w-14 items-center justify-center rounded-2xl text-2xl ${
+            isRejected ? "bg-red-50 text-red-500" : "bg-yellow-50 text-yellow-600"
+          }`}
+        >
+          <i className={`fa-solid ${isRejected ? "fa-circle-xmark" : "fa-hourglass-half"}`}></i>
+        </span>
+        <div className="max-w-sm">
+          <p className="vs-display text-base font-bold text-[#1F2937]">
+            {isRejected ? "Your account was rejected" : "Your account is pending approval"}
+          </p>
+          <p className="vs-body mt-1.5 text-sm text-[#6B7280]">
+            {isRejected
+              ? "Admin has rejected your vendor account, so you can't add or manage services right now. Please contact support for more details."
+              : "You'll be able to add and manage services once admin approves your vendor account. This usually doesn't take long — check back soon."}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const VendorServices = () => {
-  const { token } = useSelector((state) => state.auth || {});
+  const { token, user } = useSelector((state) => state.auth || {});
   const navigate = useNavigate();
 
   const [services, setServices] = useState([]);
@@ -34,6 +79,9 @@ const VendorServices = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
+
+  const vendorApprovalStatus = user?.approvalStatus || "pending";
+  const isVendorApproved = vendorApprovalStatus === "approved";
 
   // Debounce the raw input so we don't fire a request on every keystroke,
   // just SEARCH_DEBOUNCE_MS after the user pauses typing.
@@ -67,9 +115,11 @@ const VendorServices = () => {
   };
 
   useEffect(() => {
-    if (token) fetchServices({ q: debouncedSearch });
+    // Vendor abhi approved nahi hai to services fetch karne ki zarurat hi
+    // nahi — notice screen dikha denge.
+    if (token && isVendorApproved) fetchServices({ q: debouncedSearch });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, debouncedSearch]);
+  }, [token, debouncedSearch, isVendorApproved]);
 
   const goToDetails = (service) => {
     navigate(`/vendor/services/${service._id}`, { state: { service } });
@@ -79,6 +129,10 @@ const VendorServices = () => {
     statusFilter === "all"
       ? services
       : services.filter((s) => (statusFilter === "active" ? s.status : !s.status));
+
+  if (!isVendorApproved) {
+    return <VendorNotApprovedNotice approvalStatus={vendorApprovalStatus} />;
+  }
 
   return (
     <div className="vs-body text-[#1F2937]">

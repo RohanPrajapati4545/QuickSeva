@@ -16,13 +16,60 @@ const getImageUrl = (imagePath) => {
   return `${cleanBase}/${cleanPath}`;
 };
 
+// Shown instead of the form when the vendor's own account hasn't been
+// approved by admin yet.
+const VendorNotApprovedNotice = ({ approvalStatus, onBack }) => {
+  const isRejected = approvalStatus === "rejected";
+
+  return (
+    <div className="vsf-body min-h-screen w-full bg-[#F8FAFC] text-[#1F2937]">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+        .vsf-display { font-family: 'Sora', system-ui, sans-serif; }
+        .vsf-body { font-family: 'Inter', system-ui, sans-serif; }
+        .vsf-panel { border-radius: 22px; box-shadow: 0 24px 60px -40px rgba(31,41,55,0.25); }
+      `}</style>
+
+      <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col items-center justify-center px-5 py-16 text-center">
+        <span
+          className={`flex h-16 w-16 items-center justify-center rounded-2xl text-3xl ${
+            isRejected ? "bg-red-50 text-red-500" : "bg-yellow-50 text-yellow-600"
+          }`}
+        >
+          <i className={`fa-solid ${isRejected ? "fa-circle-xmark" : "fa-hourglass-half"}`}></i>
+        </span>
+
+        <h1 className="vsf-display mt-5 text-2xl font-extrabold sm:text-3xl">
+          {isRejected ? "Your account was rejected" : "Your account is pending approval"}
+        </h1>
+        <p className="vsf-body mt-3 max-w-md text-sm leading-relaxed text-[#6B7280]">
+          {isRejected
+            ? "Admin has rejected your vendor account, so you can't add services right now. Please contact support for more details."
+            : "You'll be able to add services once admin approves your vendor account. This usually doesn't take long — check back soon."}
+        </p>
+
+        <button
+          onClick={onBack}
+          className="vsf-body mt-7 rounded-2xl border border-[#E5E7EB] bg-white px-6 py-3 text-sm font-semibold text-[#1F2937] hover:bg-[#F1F5F9]"
+        >
+          <i className="fa-solid fa-arrow-left mr-2 text-xs"></i>
+          Back to services
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const VendorServiceForm = () => {
   const { id } = useParams(); // present only in edit mode
   const isEdit = Boolean(id);
   const navigate = useNavigate();
-  const { token } = useSelector((state) => state.auth || {});
+  const { token, user } = useSelector((state) => state.auth || {});
 
   const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
+
+  const vendorApprovalStatus = user?.approvalStatus || "pending";
+  const isVendorApproved = vendorApprovalStatus === "approved";
 
   const [categories, setCategories] = useState([]);
   const [categoryFields, setCategoryFields] = useState([]);
@@ -43,6 +90,10 @@ const VendorServiceForm = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    // Vendor abhi approved nahi hai to categories fetch karne ki bhi
+    // zarurat nahi — notice screen dikha denge.
+    if (!isVendorApproved) return;
+
     const fetchCategories = async () => {
       setCategoriesLoading(true);
       try {
@@ -56,10 +107,10 @@ const VendorServiceForm = () => {
     };
     if (token) fetchCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, isVendorApproved]);
 
   useEffect(() => {
-    if (!isEdit) return;
+    if (!isEdit || !isVendorApproved) return;
     const fetchService = async () => {
       setLoading(true);
       try {
@@ -83,7 +134,7 @@ const VendorServiceForm = () => {
     };
     fetchService();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, isVendorApproved]);
 
   useEffect(() => {
     if (!imageFile) {
@@ -108,6 +159,11 @@ const VendorServiceForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isVendorApproved) {
+      toast.error("Your account isn't approved yet");
+      return;
+    }
 
     if (!form.category) return toast.error("Please select a category");
     if (!form.service_name.trim()) return toast.error("Service name is required");
@@ -202,6 +258,17 @@ const VendorServiceForm = () => {
       />
     );
   };
+
+  // Vendor approved nahi hai — form ke bajaye seedha notice screen dikhao,
+  // kisi bhi fetch/render ke bina.
+  if (!isVendorApproved) {
+    return (
+      <VendorNotApprovedNotice
+        approvalStatus={vendorApprovalStatus}
+        onBack={() => navigate("/vendor/services")}
+      />
+    );
+  }
 
   if (loading || categoriesLoading) {
     return (
