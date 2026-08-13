@@ -100,13 +100,44 @@ const AdminServiceDetails = () => {
       setService(res.data.service);
       toast.success(`Service ${approvalStatus}`);
     } catch (error) {
-      toast.error(error.response?.data?.msg || "Could not update approval");
+      const data = error.response?.data;
+
+      // Backend ne bhi yehi guard laga rakha hai (vendor khud approved
+      // nahi hai) — safety net agar frontend state stale ho jaye.
+      if (data?.vendorNotApproved) {
+        toast.error(data.msg || "Vendor is not approved yet");
+        if (data.vendorId) {
+          navigate(`/admin/vendors/${data.vendorId}`);
+        }
+        return;
+      }
+
+      toast.error(data?.msg || "Could not update approval");
     } finally {
       setUpdating(false);
     }
   };
 
   const handleApprove = async () => {
+    // Vendor khud approved nahi hai to service approve karne se pehle
+    // admin ko vendor approve karne ke liye bhej do.
+    if (service.vendor && service.vendor.approvalStatus !== "approved") {
+      const goToVendor = await Swal.fire({
+        title: "Vendor not approved yet",
+        text: `"${service.vendor?.shop_name || service.vendor?.name}" is not approved yet. You need to approve the vendor first before approving their service.`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Go to vendor",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: "#F97316",
+        cancelButtonColor: "#9CA3AF",
+      });
+      if (goToVendor.isConfirmed && service.vendor?._id) {
+        navigate(`/admin/vendors/${service.vendor._id}`);
+      }
+      return;
+    }
+
     const result = await Swal.fire({
       title: "Approve this service?",
       text: `"${service.service_name}" will immediately become visible to customers on the site.`,
@@ -187,6 +218,7 @@ const AdminServiceDetails = () => {
   }
 
   const approvalStatus = service.approvalStatus || "pending";
+  const vendorApproved = service.vendor?.approvalStatus === "approved";
 
   return (
     <div className="asd-body min-h-screen bg-[#F8FAFC] text-[#1F2937]">
@@ -297,6 +329,16 @@ const AdminServiceDetails = () => {
                 </div>
               </div>
 
+              {!vendorApproved && (
+                <div className="asd-body mt-4 flex items-start gap-2.5 rounded-2xl border border-yellow-200 bg-yellow-50 p-3.5 text-xs text-yellow-800">
+                  <i className="fa-solid fa-triangle-exclamation mt-0.5 text-yellow-600"></i>
+                  <span>
+                    This vendor is not approved yet. Approve the vendor first — services from
+                    unapproved vendors can't be approved.
+                  </span>
+                </div>
+              )}
+
               <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-[#E5E7EB] bg-[#F8FAFC] p-4 sm:flex-row sm:items-center">
                 {service.vendor?.image ? (
                   <img
@@ -317,6 +359,14 @@ const AdminServiceDetails = () => {
                     {service.vendor?.email || "—"}
                   </p>
                 </div>
+                {service.vendor?.approvalStatus && (
+                  <span
+                    className={`asd-body flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold capitalize ${STATUS_STYLES[service.vendor.approvalStatus]}`}
+                  >
+                    <i className={`fa-solid ${STATUS_ICON[service.vendor.approvalStatus]} text-[11px]`}></i>
+                    {service.vendor.approvalStatus}
+                  </span>
+                )}
                 {service.vendor?._id && (
                   <button
                     onClick={() => navigate(`/admin/vendors/${service.vendor._id}`)}
@@ -355,6 +405,7 @@ const AdminServiceDetails = () => {
                     <button
                       disabled={updating}
                       onClick={handleApprove}
+                      title={!vendorApproved ? "Vendor must be approved first" : undefined}
                       className="asd-btn asd-body flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-50 px-4 py-3 text-sm font-semibold text-green-700 shadow-sm hover:bg-green-100"
                     >
                       {updating ? (
@@ -379,6 +430,7 @@ const AdminServiceDetails = () => {
                   <button
                     disabled={updating}
                     onClick={handleApprove}
+                    title={!vendorApproved ? "Vendor must be approved first" : undefined}
                     className="asd-btn asd-body flex items-center justify-center gap-2 rounded-xl bg-green-50 px-5 py-3 text-sm font-semibold text-green-700 shadow-sm hover:bg-green-100"
                   >
                     {updating ? (

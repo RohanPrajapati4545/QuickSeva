@@ -1,4 +1,4 @@
-    const User = require("../models/userSchema");
+const User = require("../models/userSchema");
     const Booking = require("../models/bookingSchema");
     const VendorCategory = require("../models/vendorCategorySchema");
     const VendorService = require("../models/vendorServiceSchema");
@@ -559,7 +559,7 @@
     }
     };
 
-    const SERVICE_VENDOR_FIELDS = "shop_name name email image address contact";
+    const SERVICE_VENDOR_FIELDS = "shop_name name email image address contact approvalStatus";
     const SERVICE_CATEGORY_FIELDS = "category_name icon";
 
     const getAllServices = async (req, res) => {
@@ -633,6 +633,29 @@
         return res.status(400).json({ msg: "Invalid approval status" });
         }
 
+        const existingService = await VendorService.findById(id).populate(
+        "vendor",
+        "approvalStatus shop_name name"
+        );
+
+        if (!existingService) {
+        return res.status(404).json({ msg: "Service not found" });
+        }
+
+        // Jab tak vendor khud approve nahi hua, uski koi bhi service
+        // "approved" mein nahi jaa sakti. Reject / pending karne pe koi
+        // rok nahi — sirf approve karte waqt ye check lagta hai.
+        if (
+        approvalStatus === "approved" &&
+        existingService.vendor?.approvalStatus !== "approved"
+        ) {
+        return res.status(400).json({
+            msg: "This vendor is not approved yet. Approve the vendor first, then approve their service.",
+            vendorNotApproved: true,
+            vendorId: existingService.vendor?._id,
+        });
+        }
+
         const service = await VendorService.findByIdAndUpdate(
         id,
         { approvalStatus },
@@ -640,10 +663,6 @@
         )
         .populate("vendor", SERVICE_VENDOR_FIELDS)
         .populate("category", SERVICE_CATEGORY_FIELDS);
-
-        if (!service) {
-        return res.status(404).json({ msg: "Service not found" });
-        }
 
         res.status(200).json({ msg: "Service approval updated", service });
     } catch (error) {
