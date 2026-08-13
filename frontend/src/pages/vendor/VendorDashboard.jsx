@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -7,6 +7,10 @@ import { toast } from "react-toastify";
 // NOTE: adjust this to match wherever VendorCategoryRoutes is actually
 // mounted in your server (e.g. app.use("/api/vendor", ...)).
 const CATEGORY_API = `${process.env.REACT_APP_API_URL}/api/vendor`;
+
+// NOTE: adjust this to match wherever your vendorProfileRoutes router is
+// mounted in your server, e.g. app.use("/api/vendor-profile", ...).
+const PROFILE_API = `${process.env.REACT_APP_API_URL}/api/vendor-profile`;
 
 const STAT_ICONS = {
   categories: "fa-tags",
@@ -54,14 +58,41 @@ const ApprovalStatusBanner = ({ approvalStatus }) => {
 };
 
 const VendorDashboard = () => {
-  const { token, user } = useSelector((state) => state.auth || {});
+  // Sirf token Redux se — approvalStatus ab kabhi Redux se nahi liya jaata,
+  // hamesha DB se (/api/vendor-profile/profile) ek baar fetch hota hai
+  // (page load / refresh par). Koi polling nahi.
+  const { token } = useSelector((state) => state.auth || {});
   const navigate = useNavigate();
+
+  const [vendorUser, setVendorUser] = useState(null);
+  const [approvalLoading, setApprovalLoading] = useState(true);
+
+  const vendorApprovalStatus = vendorUser?.approvalStatus || "pending";
+  const isVendorApproved = vendorApprovalStatus === "approved";
+
+  const fetchMyProfile = useCallback(async () => {
+    if (!token) return;
+    setApprovalLoading(true);
+    try {
+      const res = await axios.get(`${PROFILE_API}/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setVendorUser(res.data.user || null);
+    } catch (error) {
+      // token invalid/expired waghera — silently ignore, existing
+      // auth flow apni jagah handle karega
+    } finally {
+      setApprovalLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetchMyProfile();
+  }, [token, fetchMyProfile]);
 
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const vendorApprovalStatus = user?.approvalStatus || "pending";
-  const isVendorApproved = vendorApprovalStatus === "approved";
 
   useEffect(() => {
     let cancelled = false;
@@ -115,7 +146,9 @@ const VendorDashboard = () => {
         .vdd-spin { animation: vddSpin 0.8s linear infinite; }
       `}</style>
 
-      {!isVendorApproved && <ApprovalStatusBanner approvalStatus={vendorApprovalStatus} />}
+      {!approvalLoading && !isVendorApproved && (
+        <ApprovalStatusBanner approvalStatus={vendorApprovalStatus} />
+      )}
 
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -124,7 +157,7 @@ const VendorDashboard = () => {
             Vendor Panel
           </span>
           <h1 className="vdd-display mt-1 text-2xl font-extrabold text-[#1F2937] sm:text-3xl">
-            Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
+            Welcome back{vendorUser?.name ? `, ${vendorUser.name.split(" ")[0]}` : ""}
           </h1>
           <p className="vdd-body mt-1 text-sm text-[#6B7280]">
             Here's how your service categories are doing today.

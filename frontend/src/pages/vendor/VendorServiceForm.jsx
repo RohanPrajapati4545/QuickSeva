@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -7,6 +7,10 @@ import { toast } from "react-toastify";
 const CATEGORY_API = `${process.env.REACT_APP_API_URL}/api/vendor`;
 const SERVICE_API = `${process.env.REACT_APP_API_URL}/api/vendor-service`;
 const BASE_URL = process.env.REACT_APP_API_URL;
+
+// NOTE: adjust this to match wherever your vendorProfileRoutes router is
+// mounted in your server, e.g. app.use("/api/vendor-profile", ...).
+const PROFILE_API = `${process.env.REACT_APP_API_URL}/api/vendor-profile`;
 
 const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
@@ -64,12 +68,40 @@ const VendorServiceForm = () => {
   const { id } = useParams(); // present only in edit mode
   const isEdit = Boolean(id);
   const navigate = useNavigate();
-  const { token, user } = useSelector((state) => state.auth || {});
+
+  // Sirf token Redux se — approvalStatus ab kabhi Redux se nahi liya jaata,
+  // hamesha DB se (/api/vendor-profile/profile) ek baar fetch hota hai
+  // (page load / refresh par). Koi polling nahi.
+  const { token } = useSelector((state) => state.auth || {});
 
   const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
 
-  const vendorApprovalStatus = user?.approvalStatus || "pending";
+  const [vendorUser, setVendorUser] = useState(null);
+  const [approvalLoading, setApprovalLoading] = useState(true);
+
+  const vendorApprovalStatus = vendorUser?.approvalStatus || "pending";
   const isVendorApproved = vendorApprovalStatus === "approved";
+
+  const fetchMyProfile = useCallback(async () => {
+    if (!token) return;
+    setApprovalLoading(true);
+    try {
+      const res = await axios.get(`${PROFILE_API}/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setVendorUser(res.data.user || null);
+    } catch (error) {
+      // token invalid/expired waghera — silently ignore, existing
+      // auth flow apni jagah handle karega
+    } finally {
+      setApprovalLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    fetchMyProfile();
+  }, [token, fetchMyProfile]);
 
   const [categories, setCategories] = useState([]);
   const [categoryFields, setCategoryFields] = useState([]);
@@ -258,6 +290,17 @@ const VendorServiceForm = () => {
       />
     );
   };
+
+  // Approval status abhi DB se load ho raha hai — form/notice dono me se
+  // koi bhi galat flash na ho isliye ek plain loader.
+  if (approvalLoading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-24 text-sm text-[#6B7280]">
+        <i className="fa-solid fa-circle-notch animate-spin text-[#F97316]"></i>
+        Loading…
+      </div>
+    );
+  }
 
   // Vendor approved nahi hai — form ke bajaye seedha notice screen dikhao,
   // kisi bhi fetch/render ke bina.

@@ -7,10 +7,10 @@ const cloudinary = require("cloudinary").v2;
 const getPublicIdFromUrl = (url) => {
   if (!url || !/^https?:\/\//i.test(url)) return null;
   try {
-    const parts = url.split("/upload/")[1]; // e.g. v12345/uploads/abc123.jpg
+    const parts = url.split("/upload/")[1];  
     if (!parts) return null;
-    const withoutVersion = parts.replace(/^v\d+\//, ""); // uploads/abc123.jpg
-    const withoutExt = withoutVersion.replace(/\.[^/.]+$/, ""); // uploads/abc123
+    const withoutVersion = parts.replace(/^v\d+\//, "");  
+    const withoutExt = withoutVersion.replace(/\.[^/.]+$/, "");  
     return withoutExt;
   } catch {
     return null;
@@ -27,9 +27,11 @@ const removeFile = async (imageUrl) => {
   }
 };
 
+ 
 const getProfile = async (req, res) => {
   try {
-    const vendorId = req.user.id;
+   
+    const vendorId = req.user.id || req.user._id;
 
     const user = await User.findById(vendorId).select("-password");
     if (!user) {
@@ -46,7 +48,7 @@ const getProfile = async (req, res) => {
 // ================= UPDATE PROFILE =================
 const updateProfile = async (req, res) => {
   try {
-    const vendorId = req.user.id;
+    const vendorId = req.user.id || req.user._id;
     const { name, phone, shop_name, address } = req.body;
 
     const existing = await User.findById(vendorId);
@@ -79,7 +81,7 @@ const updateProfile = async (req, res) => {
 // ================= CHANGE PASSWORD =================
 const changePassword = async (req, res) => {
   try {
-    const vendorId = req.user.id;
+    const vendorId = req.user.id || req.user._id;
     const { current_password, new_password } = req.body;
 
     if (!current_password || !new_password) {
