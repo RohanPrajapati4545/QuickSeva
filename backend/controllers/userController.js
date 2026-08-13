@@ -17,11 +17,37 @@ const getApprovedVendorIds = async () => {
 
 const isVendorLive = (vendor) =>
   Boolean(vendor) && vendor.approvalStatus === "approved" && !vendor.isBlocked;
-
 const getCategories = async (req, res) => {
   try {
+    // Sirf un vendors ki services count karo jo khud approved & unblocked hain
+    const allowedVendorIds = await getApprovedVendorIds();
+
+    // Un category IDs ko dhundo jinki kam se kam 1 service
+    // active + approved ho, aur vendor bhi approved ho
+    const categoriesWithLiveServices = await VendorService.aggregate([
+      {
+        $match: {
+          status: true,
+          approvalStatus: "approved",
+          vendor: { $in: allowedVendorIds },
+        },
+      },
+      { $group: { _id: "$category" } },
+    ]);
+
+    const validCategoryIds = categoriesWithLiveServices.map((c) => c._id);
+
+    if (validCategoryIds.length === 0) {
+      return res.status(200).json({ categories: [] });
+    }
+
     const categories = await VendorCategory.aggregate([
-      { $match: { status: true } },
+      {
+        $match: {
+          status: true,
+          _id: { $in: validCategoryIds },
+        },
+      },
       {
         $group: {
           _id: { $toLower: "$category_name" },
