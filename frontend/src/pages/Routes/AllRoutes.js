@@ -34,6 +34,7 @@ import AdminCategories from "./../Admin/AdminCategories";
 import AdminCategoryForm from "./../Admin/AdminCategoryForm";
 import AdminServices from "./../Admin/AdminServices";
 import AdminServiceDetails from "./../Admin/AdminServiceDetails";
+import DynamicContentEditor from "../Admin/DynamicContentEditor";
 
 
 const RequireRole = ({ role, children }) => {
@@ -198,6 +199,7 @@ const AllRoutes = () => {
           <Route path="categories/edit/:id" element={<AdminCategoryForm />} />
           <Route path="services" element={<AdminServices />} />
           <Route path="services/:id" element={<AdminServiceDetails />} />
+          <Route path="/admin/website-content" element={<DynamicContentEditor />} />
         </Route>
 
 

@@ -34,7 +34,11 @@ const UserRoute = require("./routes/userRoute");
 const VendorBookingRoute = require("./routes/vendorBookingRoute");
 const UserProfileRoute = require("./routes/userProfileRoute");
 const AdminRoute = require("./routes/AdminRoute");
+const dynamicRoutes = require("./routes/dynamicRoute");
 
+
+
+app.use("/api/dynamic", dynamicRoutes);
 app.use("/api/auth", AuthRoute);
 app.use("/api/vendor", VendorCategoryRoute);
 app.use("/api/vendor-service", VendorServiceRoute);

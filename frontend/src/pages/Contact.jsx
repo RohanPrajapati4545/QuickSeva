@@ -1,67 +1,42 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import useDynamicContent from "../hooks/useDynamicContent";
 
-const CHANNELS = [
-  {
-    icon: "fa-phone-volume",
-    title: "Call us",
-    detail: "+91 74153 77427",
-    sub: "Toll-free, 7am – 11pm every day",
-    action: "tel:18001234567",
-    cta: "Call now",
+// --- DEFAULT / FALLBACK CONTENT (same as before — shown until API responds) ---
+const DEFAULT_CONTACT_CONTENT = {
+  hero: {
+    badge: "A real person answers, every time",
+    titleLine1: "Stuck on something?",
+    titleLine2Highlight: "Let's sort it out.",
+    subtitle:
+      "Whether it's a booking issue, a billing question, or you want to join the vendor network — reach us however suits you. Average reply time is under 15 minutes.",
   },
-  {
-    icon: "fa-envelope",
-    title: "Email us",
-    detail: "help@quickseva.in",
-    sub: "We reply within 2 hours, on average",
-    action: "mailto:help@quickseva.in",
-    cta: "Send an email",
+  channels: [
+    { icon: "fa-phone-volume", title: "Call us", detail: "+91 74153 77427", sub: "Toll-free, 7am – 11pm every day", action: "tel:18001234567", cta: "Call now" },
+    { icon: "fa-envelope", title: "Email us", detail: "help@quickseva.in", sub: "We reply within 2 hours, on average", action: "mailto:help@quickseva.in", cta: "Send an email" },
+    { icon: "fa-comment-dots", title: "WhatsApp", detail: "+91 98765 43210", sub: "Fastest for booking changes", action: "https://wa.me/919876543210", cta: "Start a chat" },
+    { icon: "fa-building", title: "Visit us", detail: "alphawizz technologies pvt. ltd", sub: "Vijay Nagar, Indore, Madhya Pradesh 452010", action: "https://maps.google.com", cta: "Get directions" },
+  ],
+  reasons: [
+    { value: "booking", label: "Help with a booking" },
+    { value: "vendor", label: "Become a vendor partner" },
+    { value: "billing", label: "Billing or a refund" },
+    { value: "feedback", label: "Feedback or a complaint" },
+    { value: "other", label: "Something else" },
+  ],
+  faqs: [
+    { q: "How quickly can a vendor reach me?", a: "Most bookings are matched to a verified professional within 15 minutes, and same-day slots are available for every service on the platform." },
+    { q: "Is the price I see really the price I pay?", a: "Yes. The quote shown at booking is the final amount for the job described. If the scope changes on-site, the vendor will confirm any difference with you before continuing." },
+    { q: "What happens if I'm not happy with the work?", a: "Tell us within 48 hours through this page or the app. We'll send someone to make it right or refund the service fee — whichever you prefer." },
+    { q: "How do I get listed as a vendor?", a: "Choose 'Become a vendor partner' in the form below. Our onboarding team runs a background check and a short skills interview, usually completed within a week." },
+  ],
+  supportHours: { monSat: "7:00 am – 11:00 pm", sunday: "9:00 am – 9:00 pm", emergency: "24 / 7" },
+  officeInfo: {
+    title: "Head office",
+    addressLine1: "Plot Number 152, Ratanlok Colony, Scheme No 53, near Cars 24 showroom",
+    addressLine2: "Vijay Nagar, Indore, Madhya Pradesh 452010",
   },
-  {
-    icon: "fa-comment-dots",
-    title: "WhatsApp",
-    detail: "+91 98765 43210",
-    sub: "Fastest for booking changes",
-    action: "https://wa.me/919876543210",
-    cta: "Start a chat",
-  },
-  {
-    icon: "fa-building",
-    title: "Visit us",
-    detail: "alphawizz technologies pvt. ltd ",
-    sub: "Vijay Nagar, Indore, Madhya Pradesh 452010",
-    action: "https://maps.google.com",
-    cta: "Get directions",
-  },
-];
-
-const REASONS = [
-  { value: "booking", label: "Help with a booking" },
-  { value: "vendor", label: "Become a vendor partner" },
-  { value: "billing", label: "Billing or a refund" },
-  { value: "feedback", label: "Feedback or a complaint" },
-  { value: "other", label: "Something else" },
-];
-
-const FAQS = [
-  {
-    q: "How quickly can a vendor reach me?",
-    a: "Most bookings are matched to a verified professional within 15 minutes, and same-day slots are available for every service on the platform.",
-  },
-  {
-    q: "Is the price I see really the price I pay?",
-    a: "Yes. The quote shown at booking is the final amount for the job described. If the scope changes on-site, the vendor will confirm any difference with you before continuing.",
-  },
-  {
-    q: "What happens if I'm not happy with the work?",
-    a: "Tell us within 48 hours through this page or the app. We'll send someone to make it right or refund the service fee — whichever you prefer.",
-  },
-  {
-    q: "How do I get listed as a vendor?",
-    a: "Choose 'Become a vendor partner' in the form below. Our onboarding team runs a background check and a short skills interview, usually completed within a week.",
-  },
-];
+};
 
 function Reveal({ children, delay = 0, className = "" }) {
   const ref = useRef(null);
@@ -94,12 +69,6 @@ function Reveal({ children, delay = 0, className = "" }) {
   );
 }
 
-/**
- * PulseConnect — the contact page's signature illustration.
- * Two nodes ("you" and QuickSeva support) joined by a dashed path.
- * A lit pulse travels the path on loop, and a reply pulse answers
- * back — a literal picture of "we actually respond".
- */
 function PulseConnect() {
   return (
     <div className="hs-orbit-wrap relative mx-auto w-full max-w-[440px]">
@@ -128,7 +97,6 @@ function PulseConnect() {
           strokeLinecap="round"
         />
 
-        {/* you */}
         <g>
           <circle cx="110" cy="160" r="46" fill="#FFFFFF" className="hs-orbit-shadow" />
           <circle cx="110" cy="160" r="40" fill="#F97316" />
@@ -139,7 +107,6 @@ function PulseConnect() {
           </foreignObject>
         </g>
 
-        {/* hub */}
         <g className="hs-orbit-hub" style={{ transformOrigin: "410px 160px" }}>
           <circle cx="410" cy="160" r="52" fill="#FFFFFF" className="hs-orbit-shadow" />
           <circle cx="410" cy="160" r="46" fill="url(#pcHub)" />
@@ -150,14 +117,12 @@ function PulseConnect() {
           </foreignObject>
         </g>
 
-        {/* pulse: you -> hub */}
         <circle r="6" fill="#F97316">
           <animateMotion dur="3.4s" repeatCount="indefinite" rotate="auto">
             <mpath href="#pcPath" />
           </animateMotion>
         </circle>
 
-        {/* reply pulse: hub -> you, offset start */}
         <circle r="5" fill="#1F2937">
           <animateMotion
             dur="3.4s"
@@ -217,11 +182,15 @@ function FaqItem({ item, isOpen, onToggle, delay }) {
 
 const Contact = () => {
   const navigate = useNavigate();
+
+  const { content } = useDynamicContent("contact", DEFAULT_CONTACT_CONTENT);
+  const { hero, channels, reasons, faqs, supportHours, officeInfo } = content;
+
   const [form, setForm] = useState({
     name: "",
     phone: "",
     email: "",
-    reason: "booking",
+    reason: reasons[0]?.value || "booking",
     message: "",
   });
   const [status, setStatus] = useState("idle"); // idle | sending | sent
@@ -334,7 +303,7 @@ const Contact = () => {
         }
       `}</style>
 
-      {/* ============ HERO — 55% copy / 45% illustration ============ */}
+      {/* ============ HERO ============ */}
       <section className="relative overflow-hidden bg-[#F8FAFC] px-4 pb-12 pt-12 sm:px-6 sm:pt-14 lg:pb-16 lg:pt-16">
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-9 lg:grid-cols-[55%_45%] lg:gap-5">
           <div className="max-w-2xl">
@@ -343,25 +312,23 @@ const Contact = () => {
               style={{ animationDelay: "0.05s" }}
             >
               <i className="fa-solid fa-headset"></i>
-              A real person answers, every time
+              {hero.badge}
             </span>
 
             <h1
               className="hs-fade-up hs-display mt-6 text-3xl font-extrabold leading-[1.1] text-[#1F2937] sm:text-4xl lg:text-[2.7rem]"
               style={{ animationDelay: "0.15s" }}
             >
-              Stuck on something?
+              {hero.titleLine1}
               <br />
-              <span className="text-[#F97316]">Let's sort it out.</span>
+              <span className="text-[#F97316]">{hero.titleLine2Highlight}</span>
             </h1>
 
             <p
               className="hs-fade-up hs-body mt-4 max-w-lg text-sm leading-relaxed text-[#4B5563] sm:text-base"
               style={{ animationDelay: "0.25s" }}
             >
-              Whether it's a booking issue, a billing question, or you want
-              to join the vendor network — reach us however suits you.
-              Average reply time is under 15 minutes.
+              {hero.subtitle}
             </p>
 
             <div
@@ -390,8 +357,6 @@ const Contact = () => {
         </div>
       </section>
 
-    
-
       {/* ============ FORM + SIDE INFO ============ */}
       <section className="bg-[#F8FAFC] px-4 py-14 sm:px-6 lg:py-20">
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 lg:grid-cols-[1fr_0.7fr]">
@@ -418,7 +383,7 @@ const Contact = () => {
                   </p>
                   <button
                     onClick={() => {
-                      setForm({ name: "", phone: "", email: "", reason: "booking", message: "" });
+                      setForm({ name: "", phone: "", email: "", reason: reasons[0]?.value || "booking", message: "" });
                       setStatus("idle");
                     }}
                     className="hs-body mt-2 text-sm font-semibold text-[#F97316] hover:text-[#EA580C]"
@@ -465,7 +430,7 @@ const Contact = () => {
                       onChange={update("reason")}
                       className="hs-input rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-sm text-[#1F2937]"
                     >
-                      {REASONS.map((r) => (
+                      {reasons.map((r) => (
                         <option key={r.value} value={r.value}>
                           {r.label}
                         </option>
@@ -515,15 +480,15 @@ const Contact = () => {
                 <div className="hs-body mt-4 space-y-2 text-sm text-[#D1D5DB]">
                   <div className="flex justify-between">
                     <span>Mon – Sat</span>
-                    <span className="font-semibold text-white">7:00 am – 11:00 pm</span>
+                    <span className="font-semibold text-white">{supportHours.monSat}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Sunday</span>
-                    <span className="font-semibold text-white">9:00 am – 9:00 pm</span>
+                    <span className="font-semibold text-white">{supportHours.sunday}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Emergency line</span>
-                    <span className="font-semibold text-[#F97316]">24 / 7</span>
+                    <span className="font-semibold text-[#F97316]">{supportHours.emergency}</span>
                   </div>
                 </div>
               </div>
@@ -535,12 +500,12 @@ const Contact = () => {
                   <i className="fa-solid fa-location-dot"></i>
                 </div>
                 <h3 className="hs-display mt-3 text-sm font-bold text-[#1F2937]">
-                  Head office
+                  {officeInfo.title}
                 </h3>
                 <p className="hs-body mt-2 text-sm leading-relaxed text-[#6B7280]">
-                 Plot Number 152, Ratanlok Colony, Scheme No 53, near Cars 24 showroom
+                  {officeInfo.addressLine1}
                   <br />
-                 Vijay Nagar, Indore, Madhya Pradesh 452010
+                  {officeInfo.addressLine2}
                 </p>
               </div>
             </Reveal>
@@ -569,7 +534,7 @@ const Contact = () => {
         </div>
       </section>
 
-        {/* ============ CONTACT CHANNELS ============ */}
+      {/* ============ CONTACT CHANNELS ============ */}
       <section className="px-4 py-14 sm:px-6 lg:py-20">
         <div className="mx-auto max-w-7xl">
           <Reveal className="mx-auto max-w-xl text-center">
@@ -582,7 +547,7 @@ const Contact = () => {
           </Reveal>
 
           <div className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {CHANNELS.map((c, i) => (
+            {channels.map((c, i) => (
               <Reveal key={c.title} delay={i * 0.08}>
                 <a
                   href={c.action}
@@ -623,7 +588,7 @@ const Contact = () => {
           </Reveal>
 
           <div className="mt-9 flex flex-col gap-3">
-            {FAQS.map((item, i) => (
+            {faqs.map((item, i) => (
               <FaqItem
                 key={item.q}
                 item={item}

@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { to: "/admin/users", label: "Users", icon: "fa-users" },
   { to: "/admin/categories", label: "Categories", icon: "fa-tags" },
   { to: "/admin/services", label: "Services", icon: "fa-screwdriver-wrench" },
+  { to: "/admin/website-content", label: "Website Content", icon: "fa-pen-to-square" },
 ];
 
 const AdminSidebar = ({ onNavigate }) => {
