@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { getHomeContent } = require("../controllers/HomeContentController");
+const { getHomeContent } = require("../controllers/homeContentController");
 const { getHeaderContent } = require("../controllers/HeaderContentController");
 const { getAboutContent } = require("../controllers/AboutContentController");
 const { getContactContent } = require("../controllers/ContactContentController");
