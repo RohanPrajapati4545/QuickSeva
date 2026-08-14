@@ -34,11 +34,8 @@ const UserRoute = require("./routes/userRoute");
 const VendorBookingRoute = require("./routes/vendorBookingRoute");
 const UserProfileRoute = require("./routes/userProfileRoute");
 const AdminRoute = require("./routes/AdminRoute");
-const dynamicRoutes = require("./routes/dynamicRoute");
+const ContentRoute = require("./routes/ContentRoutes");
 
-
-
-app.use("/api/dynamic", dynamicRoutes);
 app.use("/api/auth", AuthRoute);
 app.use("/api/vendor", VendorCategoryRoute);
 app.use("/api/vendor-service", VendorServiceRoute);
@@ -47,6 +44,7 @@ app.use("/api/user", UserRoute);
 app.use("/api/vendor-booking", VendorBookingRoute);
 app.use("/api/user-profile", UserProfileRoute);
 app.use("/api/admin", AdminRoute);
+app.use("/api/content", ContentRoute);
 
 const PORT = process.env.PORT || 5000;
 

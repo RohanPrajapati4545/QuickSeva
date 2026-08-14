@@ -1,10 +1,62 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import useDynamicContent from "../hooks/useDynamicContent";
 
 const USER_API = `${process.env.REACT_APP_API_URL}/api/user`;
 const BASE_URL = process.env.REACT_APP_API_URL;
+
+// Admin-editable home content — these are just the render defaults so the
+// page still looks right the instant it mounts, before the fetch resolves.
+// Keep this in sync with the schema defaults in HomeContentSchema.js.
+const DEFAULT_CONTENT = {
+  heroBadgeText: "Trusted by 50,000+ homes",
+  heroTitleLine1: "Every home fix,",
+  heroTitleLine2: "one tap away.",
+  heroSubtitle:
+    "From a tripped fuse to a full home clean — book verified electricians, plumbers, mechanics and repair experts near you, with the price shown before you confirm.",
+  heroSearchPlaceholder: "What do you need fixed?",
+  heroSearchButtonText: "Search",
+  heroCtaPrimaryText: "Book a Service",
+  heroCtaGhostText: "Become a Vendor",
+
+  servicesEyebrow: "What we offer",
+  servicesTitle: "Popular services",
+  servicesSubtitle: "Explore categories, priced upfront by verified vendors.",
+
+  whyUsEyebrow: "Why QuickSeva",
+  whyUsTitle: "Built for trust, not just convenience",
+  whyUs: [
+    { icon: "fa-shield-halved", title: "Verified professionals", desc: "Every partner passes a background check and skill test before their first job." },
+    { icon: "fa-indian-rupee-sign", title: "Upfront pricing", desc: "See the exact cost when you book. What you're quoted is what you pay." },
+    { icon: "fa-clock", title: "On-time guarantee", desc: "Late arrivals are rare — and when they happen, we make it right." },
+    { icon: "fa-headset", title: "Support that answers", desc: "A real person is reachable before, during and after every booking." },
+  ],
+
+  howItWorksEyebrow: "Simple by design",
+  howItWorksTitle: "How it works",
+  howItWorks: [
+    { n: "01", icon: "fa-magnifying-glass", title: "Book", desc: "Pick a service, share your location and preferred time slot." },
+    { n: "02", icon: "fa-user-check", title: "Vendor assigned", desc: "The nearest verified professional is matched and confirmed to you." },
+    { n: "03", icon: "fa-circle-check", title: "Service completed", desc: "Track the job live, pay the quoted price, then rate your experience." },
+  ],
+
+  vendorsEyebrow: "Meet the network",
+  vendorsTitle: "Featured vendors",
+
+  reviewsEyebrow: "Real feedback",
+  reviewsTitle: "What customers say",
+  reviews: [
+    { name: "Priya Nair", role: "Homeowner, Pune", quote: "Booked an AC service at 9pm and had someone at the door by 10 the next morning. Priced exactly as shown." },
+    { name: "Karan Mehta", role: "Tenant, Ahmedabad", quote: "The electrician sent a photo ID before arriving. Small thing, but it made me trust the whole platform instantly." },
+    { name: "Divya Shah", role: "Homeowner, Surat", quote: "Washing machine drum issue fixed in one visit. No upsell, no hidden parts cost — just the quote I'd agreed to." },
+  ],
+
+  appEyebrow: "On the go",
+  appTitle: "Book, track and pay — right from your pocket.",
+  appSubtitle: "Get the QuickSeva app for live vendor tracking, instant rebooking and exclusive app-only offers.",
+  appStoreText: "App Store",
+  googlePlayText: "Google Play",
+};
 
 const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
@@ -24,38 +76,6 @@ function useDebouncedValue(value, delay = 400) {
 
   return debounced;
 }
-
-// --- DEFAULT / FALLBACK CONTENT (same values as before — used until API responds) ---
-const DEFAULT_HOME_CONTENT = {
-  hero: {
-    badge: "Trusted by 50,000+ homes",
-    titleLine1: "Every home fix,",
-    titleLine2Highlight: "one tap away.",
-    subtitle:
-      "From a tripped fuse to a full home clean — book verified electricians, plumbers, mechanics and repair experts near you, with the price shown before you confirm.",
-  },
-  whyUs: [
-    { icon: "fa-shield-halved", title: "Verified professionals", desc: "Every partner passes a background check and skill test before their first job." },
-    { icon: "fa-indian-rupee-sign", title: "Upfront pricing", desc: "See the exact cost when you book. What you're quoted is what you pay." },
-    { icon: "fa-clock", title: "On-time guarantee", desc: "Late arrivals are rare — and when they happen, we make it right." },
-    { icon: "fa-headset", title: "Support that answers", desc: "A real person is reachable before, during and after every booking." },
-  ],
-  howItWorks: [
-    { n: "01", icon: "fa-magnifying-glass", title: "Book", desc: "Pick a service, share your location and preferred time slot." },
-    { n: "02", icon: "fa-user-check", title: "Vendor assigned", desc: "The nearest verified professional is matched and confirmed to you." },
-    { n: "03", icon: "fa-circle-check", title: "Service completed", desc: "Track the job live, pay the quoted price, then rate your experience." },
-  ],
-  reviews: [
-    { name: "Priya Nair", role: "Homeowner, Pune", quote: "Booked an AC service at 9pm and had someone at the door by 10 the next morning. Priced exactly as shown." },
-    { name: "Karan Mehta", role: "Tenant, Ahmedabad", quote: "The electrician sent a photo ID before arriving. Small thing, but it made me trust the whole platform instantly." },
-    { name: "Divya Shah", role: "Homeowner, Surat", quote: "Washing machine drum issue fixed in one visit. No upsell, no hidden parts cost — just the quote I'd agreed to." },
-  ],
-  appSection: {
-    badge: "On the go",
-    title: "Book, track and pay — right from your pocket.",
-    desc: "Get the QuickSeva app for live vendor tracking, instant rebooking and exclusive app-only offers.",
-  },
-};
 
 function Reveal({ children, delay = 0, className = "" }) {
   const ref = useRef(null);
@@ -143,14 +163,14 @@ const Home = () => {
   const navigate = useNavigate();
   const [serviceQuery, setServiceQuery] = useState("");
 
+  // Admin-editable static copy (hero, why-us, how-it-works, reviews, app promo).
+  const [content, setContent] = useState(DEFAULT_CONTENT);
+
+  // Live data (categories / featured services / featured vendors).
   const [categories, setCategories] = useState([]);
   const [featuredServices, setFeaturedServices] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [homeLoading, setHomeLoading] = useState(true);
-
-  // --- dynamic admin-editable content ---
-  const { content } = useDynamicContent("home", DEFAULT_HOME_CONTENT);
-  const { hero, whyUs, howItWorks, reviews, appSection } = content;
 
   const debouncedQuery = useDebouncedValue(serviceQuery, 400);
   const [suggestOpen, setSuggestOpen] = useState(false);
@@ -160,6 +180,23 @@ const Home = () => {
   const searchBoxRef = useRef(null);
 
   const USER_APIBASE = USER_API;
+
+  // Fetch the admin-editable content once on mount. Falls back silently
+  // to DEFAULT_CONTENT if the request fails, so the page still renders.
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/content/home`);
+        if (res.data?.content) {
+          setContent(res.data.content);
+        }
+      } catch (error) {
+        console.log("Failed to load home content, using defaults:", error);
+      }
+    };
+
+    fetchContent();
+  }, []);
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -320,17 +357,17 @@ const Home = () => {
           <div className="max-w-2xl">
             <span className="hs-fade-up hs-body inline-flex items-center gap-2 rounded-full border border-[#F97316]/25 bg-[#F97316]/10 px-3.5 py-1.5 text-xs font-semibold text-[#EA580C]" style={{ animationDelay: "0.05s" }}>
               <i className="fa-solid fa-circle-check"></i>
-              {hero.badge}
+              {content.heroBadgeText}
             </span>
 
             <h1 className="hs-fade-up hs-display mt-6 text-3xl font-extrabold leading-[1.1] text-[#1F2937] sm:text-4xl lg:text-[2.7rem]" style={{ animationDelay: "0.15s" }}>
-              {hero.titleLine1}
+              {content.heroTitleLine1}
               <br />
-              <span className="text-[#F97316]">{hero.titleLine2Highlight}</span>
+              <span className="text-[#F97316]">{content.heroTitleLine2}</span>
             </h1>
 
             <p className="hs-fade-up hs-body mt-4 max-w-lg text-sm leading-relaxed text-[#4B5563] sm:text-base" style={{ animationDelay: "0.25s" }}>
-              {hero.subtitle}
+              {content.heroSubtitle}
             </p>
 
             <div ref={searchBoxRef} className="relative">
@@ -346,13 +383,13 @@ const Home = () => {
                     value={serviceQuery}
                     onChange={(e) => setServiceQuery(e.target.value)}
                     onFocus={() => serviceQuery.trim() && setSuggestOpen(true)}
-                    placeholder="What do you need fixed?"
+                    placeholder={content.heroSearchPlaceholder}
                     className="hs-body w-full bg-transparent text-sm text-[#1F2937] outline-none placeholder:text-[#9CA3AF]"
                     autoComplete="off"
                   />
                 </label>
                 <button type="submit" className="hs-cta-primary hs-body shrink-0 rounded-xl px-6 py-3 text-sm font-semibold text-white">
-                  Search
+                  {content.heroSearchButtonText}
                 </button>
               </form>
 
@@ -424,10 +461,10 @@ const Home = () => {
 
             <div className="hs-fade-up mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center" style={{ animationDelay: "0.45s" }}>
               <button onClick={() => goTo("/services")} className="hs-cta-primary hs-body w-full rounded-2xl px-6 py-3 text-sm font-semibold text-white sm:w-auto">
-                Book a Service
+                {content.heroCtaPrimaryText}
               </button>
               <button onClick={() => goTo("/register")} className="hs-cta-ghost hs-body w-full rounded-2xl border border-[#1F2937]/20 px-6 py-3 text-sm font-semibold text-[#1F2937] sm:w-auto">
-                Become a Vendor
+                {content.heroCtaGhostText}
               </button>
             </div>
           </div>
@@ -441,9 +478,9 @@ const Home = () => {
       <section className="px-4 py-14 sm:px-6 lg:py-20">
         <div className="mx-auto max-w-7xl">
           <Reveal className="mx-auto max-w-xl text-center">
-            <span className="hs-body text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">What we offer</span>
-            <h2 className="hs-display mt-2 text-2xl font-extrabold text-[#1F2937] sm:text-3xl">Popular services</h2>
-            <p className="hs-body mt-3 text-[#6B7280]">Explore categories, priced upfront by verified vendors.</p>
+            <span className="hs-body text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">{content.servicesEyebrow}</span>
+            <h2 className="hs-display mt-2 text-2xl font-extrabold text-[#1F2937] sm:text-3xl">{content.servicesTitle}</h2>
+            <p className="hs-body mt-3 text-[#6B7280]">{content.servicesSubtitle}</p>
           </Reveal>
 
           {homeLoading ? (
@@ -481,13 +518,13 @@ const Home = () => {
       <section className="bg-[#F8FAFC] px-4 py-14 sm:px-6 lg:py-20">
         <div className="mx-auto max-w-7xl">
           <Reveal className="mx-auto max-w-xl text-center">
-            <span className="hs-body text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">Why QuickSeva</span>
-            <h2 className="hs-display mt-2 text-2xl font-extrabold text-[#1F2937] sm:text-3xl">Built for trust, not just convenience</h2>
+            <span className="hs-body text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">{content.whyUsEyebrow}</span>
+            <h2 className="hs-display mt-2 text-2xl font-extrabold text-[#1F2937] sm:text-3xl">{content.whyUsTitle}</h2>
           </Reveal>
 
           <div className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {whyUs.map((w, i) => (
-              <Reveal key={w.title} delay={i * 0.08}>
+            {content.whyUs.map((w, i) => (
+              <Reveal key={w.title || i} delay={i * 0.08}>
                 <div className="hs-card h-full rounded-2xl bg-white p-5 shadow-[0_16px_36px_-24px_rgba(31,41,55,0.2)]">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F97316]/15 text-[#F97316]">
                     <i className={`fa-solid ${w.icon}`}></i>
@@ -504,8 +541,8 @@ const Home = () => {
       <section className="px-4 py-14 sm:px-6 lg:py-20">
         <div className="mx-auto max-w-6xl">
           <Reveal className="mx-auto max-w-xl text-center">
-            <span className="hs-body text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">Simple by design</span>
-            <h2 className="hs-display mt-2 text-2xl font-extrabold text-[#1F2937] sm:text-3xl">How it works</h2>
+            <span className="hs-body text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">{content.howItWorksEyebrow}</span>
+            <h2 className="hs-display mt-2 text-2xl font-extrabold text-[#1F2937] sm:text-3xl">{content.howItWorksTitle}</h2>
           </Reveal>
 
           <Reveal delay={0.1} className="relative mt-12 hidden sm:block">
@@ -513,8 +550,8 @@ const Home = () => {
           </Reveal>
 
           <div className="mt-10 grid grid-cols-1 gap-10 sm:mt-[-2.5rem] sm:grid-cols-3">
-            {howItWorks.map((step, i) => (
-              <Reveal key={step.n} delay={i * 0.15} className="text-center">
+            {content.howItWorks.map((step, i) => (
+              <Reveal key={step.n || i} delay={i * 0.15} className="text-center">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-[0_16px_36px_-20px_rgba(31,41,55,0.3)]">
                   <i className={`fa-solid ${step.icon} text-xl text-[#F97316]`}></i>
                 </div>
@@ -531,8 +568,8 @@ const Home = () => {
         <div className="mx-auto max-w-7xl">
           <Reveal className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
             <div>
-              <span className="hs-body text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">Meet the network</span>
-              <h2 className="hs-display mt-2 text-2xl font-extrabold text-[#1F2937] sm:text-3xl">Featured vendors</h2>
+              <span className="hs-body text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">{content.vendorsEyebrow}</span>
+              <h2 className="hs-display mt-2 text-2xl font-extrabold text-[#1F2937] sm:text-3xl">{content.vendorsTitle}</h2>
             </div>
             <button onClick={() => goTo("/services")} className="hs-body text-sm font-semibold text-[#F97316] hover:text-[#EA580C]">
               See all professionals →
@@ -575,13 +612,13 @@ const Home = () => {
       <section className="px-4 py-14 sm:px-6 lg:py-20">
         <div className="mx-auto max-w-7xl">
           <Reveal className="mx-auto max-w-xl text-center">
-            <span className="hs-body text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">Real feedback</span>
-            <h2 className="hs-display mt-2 text-2xl font-extrabold text-[#1F2937] sm:text-3xl">What customers say</h2>
+            <span className="hs-body text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">{content.reviewsEyebrow}</span>
+            <h2 className="hs-display mt-2 text-2xl font-extrabold text-[#1F2937] sm:text-3xl">{content.reviewsTitle}</h2>
           </Reveal>
 
           <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-3">
-            {reviews.map((r, i) => (
-              <Reveal key={r.name} delay={i * 0.1}>
+            {content.reviews.map((r, i) => (
+              <Reveal key={r.name || i} delay={i * 0.1}>
                 <div className="hs-card h-full rounded-2xl border border-[#E5E7EB] bg-white p-5">
                   <div className="flex gap-1 text-[#F97316]">
                     {Array.from({ length: 5 }).map((_, idx) => (
@@ -602,17 +639,17 @@ const Home = () => {
         <Reveal className="mx-auto max-w-7xl overflow-hidden rounded-[28px] bg-[#1F2937] px-6 py-10 sm:px-10 sm:py-12">
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
             <div>
-              <span className="hs-body text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">{appSection.badge}</span>
-              <h2 className="hs-display mt-2 text-2xl font-extrabold text-white sm:text-3xl">{appSection.title}</h2>
-              <p className="hs-body mt-4 max-w-md text-sm text-[#D1D5DB] sm:text-base">{appSection.desc}</p>
+              <span className="hs-body text-xs font-bold uppercase tracking-[0.2em] text-[#F97316]">{content.appEyebrow}</span>
+              <h2 className="hs-display mt-2 text-2xl font-extrabold text-white sm:text-3xl">{content.appTitle}</h2>
+              <p className="hs-body mt-4 max-w-md text-sm text-[#D1D5DB] sm:text-base">{content.appSubtitle}</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <button className="hs-body flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-[#1F2937] transition-transform hover:-translate-y-0.5">
                   <i className="fa-brands fa-apple text-lg"></i>
-                  App Store
+                  {content.appStoreText}
                 </button>
                 <button className="hs-cta-primary hs-body flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-white">
                   <i className="fa-brands fa-google-play"></i>
-                  Google Play
+                  {content.googlePlayText}
                 </button>
               </div>
             </div>

@@ -4,10 +4,6 @@ const router = express.Router();
 const authMiddleware = require("./../middlewares/AuthMiddleware");
 const adminMiddleware = require("./../middlewares/AdminMiddleware");
 
-// NOTE: adjust this import to match whatever multer instance your project
-// already uses for image uploads (e.g. the one used by the user-facing
-// profile update route). It must be a configured multer() instance that
-// exposes `.single(fieldName)`.
 const upload = require("../middlewares/upload");
 
 const {
@@ -34,6 +30,11 @@ const {
   updateServiceApproval,
   deleteService,
 } = require("../controllers/AdminController");
+
+const { getHomeContent, updateHomeContent } = require("../controllers/HomeContentController");
+const { getHeaderContent, updateHeaderContent } = require("../controllers/HeaderContentController");
+const { getAboutContent, updateAboutContent } = require("../controllers/AboutContentController");
+const { getContactContent, updateContactContent } = require("../controllers/ContactContentController");
 
 router.get("/dashboard-summary", authMiddleware, adminMiddleware, getDashboardSummary);
 
@@ -73,5 +74,21 @@ router.get("/services/all-services", authMiddleware, adminMiddleware, getAllServ
 router.get("/services/service/:id", authMiddleware, adminMiddleware, getServiceById);
 router.put("/services/update-approval/:id", authMiddleware, adminMiddleware, updateServiceApproval);
 router.delete("/services/delete-service/:id", authMiddleware, adminMiddleware, deleteService);
+
+// ===== HOME PAGE CONTENT =====
+router.get("/home-content", authMiddleware, adminMiddleware, getHomeContent);
+router.put("/home-content", authMiddleware, adminMiddleware, updateHomeContent);
+
+// ===== HEADER CONTENT (logo / nav links / cta / top bar) =====
+router.get("/header-content", authMiddleware, adminMiddleware, getHeaderContent);
+router.put("/header-content", authMiddleware, adminMiddleware, updateHeaderContent);
+
+// ===== ABOUT PAGE CONTENT (hero / story / mission / values / stats / team) =====
+router.get("/about-content", authMiddleware, adminMiddleware, getAboutContent);
+router.put("/about-content", authMiddleware, adminMiddleware, updateAboutContent);
+
+// ===== CONTACT PAGE CONTENT (hero / contact details / form heading) =====
+router.get("/contact-content", authMiddleware, adminMiddleware, getContactContent);
+router.put("/contact-content", authMiddleware, adminMiddleware, updateContactContent);
 
 module.exports = router;

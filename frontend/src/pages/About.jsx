@@ -1,28 +1,35 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import useDynamicContent from "../hooks/useDynamicContent";
 
-// --- DEFAULT / FALLBACK CONTENT (same as before — shown until API responds) ---
-const DEFAULT_ABOUT_CONTENT = {
-  hero: {
-    badge: "About QuickSeva",
-    title: "Home repairs, without the runaround.",
-    subtitle:
-      "We started QuickSeva because finding a trustworthy electrician or plumber shouldn't take five phone calls and a leap of faith. Today we connect thousands of households with verified professionals every month.",
+const VALUES = [
+  {
+    icon: "fa-shield-halved",
+    title: "Verified, always",
+    desc: "Every professional is background-checked before they ever get a job.",
   },
-  values: [
-    { icon: "fa-shield-halved", title: "Verified, always", desc: "Every professional is background-checked before they ever get a job." },
-    { icon: "fa-indian-rupee-sign", title: "Upfront pricing", desc: "You see the cost before you book — no surprise charges at the door." },
-    { icon: "fa-clock", title: "Fast response", desc: "Most bookings are matched with a nearby pro in under 15 minutes." },
-  ],
-  timeline: [
-    { year: "2022", text: "QuickSeva starts in one city with 40 electricians and plumbers." },
-    { year: "2023", text: "Carpentry, painting and appliance repair join the platform." },
-    { year: "2024", text: "Crosses 10,000 completed jobs across 18 cities." },
-    { year: "2026", text: "Building the fastest way to get anything at home fixed." },
-  ],
-};
+  {
+    icon: "fa-indian-rupee-sign",
+    title: "Upfront pricing",
+    desc: "You see the cost before you book — no surprise charges at the door.",
+  },
+  {
+    icon: "fa-clock",
+    title: "Fast response",
+    desc: "Most bookings are matched with a nearby pro in under 15 minutes.",
+  },
+];
 
+const TIMELINE = [
+  { year: "2022", text: "QuickSeva starts in one city with 40 electricians and plumbers." },
+  { year: "2023", text: "Carpentry, painting and appliance repair join the platform." },
+  { year: "2024", text: "Crosses 10,000 completed jobs across 18 cities." },
+  { year: "2026", text: "Building the fastest way to get anything at home fixed." },
+];
+
+/**
+ * Reveal — small IntersectionObserver wrapper so sections animate in as
+ * the user scrolls to them. Same pattern used in Home.jsx / Header.jsx.
+ */
 function Reveal({ children, delay = 0, className = "" }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -56,8 +63,6 @@ function Reveal({ children, delay = 0, className = "" }) {
 
 const About = () => {
   const navigate = useNavigate();
-  const { content } = useDynamicContent("about", DEFAULT_ABOUT_CONTENT);
-  const { hero, values, timeline } = content;
 
   const goTo = (path) => {
     navigate(path);
@@ -133,19 +138,22 @@ const About = () => {
             className="hs-fade-up hs-body inline-flex items-center gap-2 rounded-full border border-[#F97316]/25 bg-[#F97316]/10 px-3 py-1 text-xs font-semibold text-[#EA580C]"
             style={{ animationDelay: "0.05s" }}
           >
-            {hero.badge}
+            About QuickSeva
           </span>
           <h1
             className="hs-fade-up hs-display mt-5 text-3xl font-extrabold leading-[1.15] text-[#1F2937] sm:text-4xl"
             style={{ animationDelay: "0.15s" }}
           >
-            {hero.title}
+            Home repairs, without the runaround.
           </h1>
           <p
             className="hs-fade-up hs-body mx-auto mt-4 max-w-xl text-sm text-[#6B7280] sm:text-base"
             style={{ animationDelay: "0.25s" }}
           >
-            {hero.subtitle}
+            We started QuickSeva because finding a trustworthy electrician or
+            plumber shouldn't take five phone calls and a leap of faith.
+            Today we connect thousands of households with verified
+            professionals every month.
           </p>
         </div>
       </section>
@@ -159,7 +167,7 @@ const About = () => {
             </h2>
           </Reveal>
           <div className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {values.map((v, i) => (
+            {VALUES.map((v, i) => (
               <Reveal key={v.title} delay={i * 0.1}>
                 <div className="hs-value-card h-full border border-[#E5E7EB] bg-white p-5">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F97316]/10 text-[#F97316]">
@@ -188,7 +196,7 @@ const About = () => {
           <Reveal delay={0.1} className="relative mt-9">
             <div className="hs-timeline-line absolute left-0 top-0 h-full w-px bg-[#F97316]/25" />
             <div className="hs-body space-y-6 pl-6">
-              {timeline.map((t) => (
+              {TIMELINE.map((t) => (
                 <div key={t.year} className="hs-timeline-item relative">
                   <span className="hs-timeline-dot absolute -left-[27px] top-1 h-2.5 w-2.5 rounded-full bg-[#F97316]" />
                   <div className="hs-display text-base font-bold text-[#F97316]">

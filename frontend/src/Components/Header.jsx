@@ -3,31 +3,28 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import { logout } from "./../pages/Redux/AuthSlice";
-import useDynamicContent from "../hooks/useDynamicContent";
+ 
+const NAV_LINKS = [
+  { label: "Home", path: "/" },
+  { label: "Services", path: "/services", dropdown: true },
+  { label: "About", path: "/about" },
+  { label: "Contact", path: "/contact" },
+];
 
-// --- DEFAULT / FALLBACK CONTENT (same as before — shown until API responds) ---
-const DEFAULT_HEADER_CONTENT = {
-  navLinks: [
-    { label: "Home", path: "/" },
-    { label: "Services", path: "/services", dropdown: true },
-    { label: "About", path: "/about" },
-    { label: "Contact", path: "/contact" },
-  ],
-  serviceLinks: [
-    { icon: "fa-bolt", label: "Electrician", path: "/services/electrician" },
-    { icon: "fa-faucet-drip", label: "Plumber", path: "/services/plumber" },
-    { icon: "fa-laptop", label: "Laptop Repair", path: "/services/laptop-repair" },
-    { icon: "fa-desktop", label: "Computer Repair", path: "/services/computer-repair" },
-    { icon: "fa-snowflake", label: "AC Repair", path: "/services/ac-repair" },
-    { icon: "fa-jug-detergent", label: "Washing Machine Repair", path: "/services/washing-machine-repair" },
-    { icon: "fa-temperature-low", label: "Refrigerator Repair", path: "/services/refrigerator-repair" },
-    { icon: "fa-microchip", label: "Electronics Repair", path: "/services/electronics-repair" },
-    { icon: "fa-car", label: "Car Mechanic", path: "/services/car-mechanic" },
-    { icon: "fa-broom", label: "Home Cleaning", path: "/services/home-cleaning" },
-    { icon: "fa-paint-roller", label: "Painting", path: "/services/painting" },
-    { icon: "fa-hammer", label: "Carpenter", path: "/services/carpenter" },
-  ],
-};
+const SERVICE_LINKS = [
+  { icon: "fa-bolt", label: "Electrician", path: "/services/electrician" },
+  { icon: "fa-faucet-drip", label: "Plumber", path: "/services/plumber" },
+  { icon: "fa-laptop", label: "Laptop Repair", path: "/services/laptop-repair" },
+  { icon: "fa-desktop", label: "Computer Repair", path: "/services/computer-repair" },
+  { icon: "fa-snowflake", label: "AC Repair", path: "/services/ac-repair" },
+  { icon: "fa-jug-detergent", label: "Washing Machine Repair", path: "/services/washing-machine-repair" },
+  { icon: "fa-temperature-low", label: "Refrigerator Repair", path: "/services/refrigerator-repair" },
+  { icon: "fa-microchip", label: "Electronics Repair", path: "/services/electronics-repair" },
+  { icon: "fa-car", label: "Car Mechanic", path: "/services/car-mechanic" },
+  { icon: "fa-broom", label: "Home Cleaning", path: "/services/home-cleaning" },
+  { icon: "fa-paint-roller", label: "Painting", path: "/services/painting" },
+  { icon: "fa-hammer", label: "Carpenter", path: "/services/carpenter" },
+];
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -49,9 +46,6 @@ const Header = () => {
   const servicesRef = useRef(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
-  const { content } = useDynamicContent("header", DEFAULT_HEADER_CONTENT);
-  const { navLinks, serviceLinks } = content;
 
   const { token, user } = useSelector((state) => state.auth || {});
   const avatarUrl = getImageUrl(user?.image);
@@ -168,7 +162,7 @@ const Header = () => {
 
           <div className="hidden items-center gap-8 md:flex">
             <nav className="hs-body flex items-center gap-9">
-              {navLinks.map((link) =>
+              {NAV_LINKS.map((link) =>
                 link.dropdown ? (
                   <div key={link.path} className="hs-dropdown-wrap" tabIndex={0} ref={servicesRef}>
                     <span
@@ -181,7 +175,7 @@ const Header = () => {
                     <div
                       className={`hs-dropdown-panel z-50 grid w-[500px] grid-cols-2 gap-1 rounded-2xl border border-[#E5E7EB] bg-white p-3 shadow-[0_24px_60px_-24px_rgba(31,41,55,0.3)] ${desktopServicesOpen ? "hs-dropdown-open" : ""}`}
                     >
-                      {serviceLinks.map((s) => (
+                      {SERVICE_LINKS.map((s) => (
                         <span key={s.path} onClick={() => goTo(s.path)} className="hs-drop-item flex cursor-pointer items-center gap-2.5 px-3 py-2.5 text-sm text-[#374151]">
                           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F8FAFC] text-[#F97316]">
                             <i className={`fa-solid ${s.icon} text-xs`}></i>
@@ -258,7 +252,7 @@ const Header = () => {
                 </span>
                 {mobileServicesOpen && (
                   <div className="ml-2 flex flex-col border-l border-[#E5E7EB] pl-3">
-                    {serviceLinks.map((s) => (
+                    {SERVICE_LINKS.map((s) => (
                       <span key={s.path} onClick={() => goTo(s.path)} className="hs-mobile-link flex cursor-pointer items-center gap-2 px-3 py-2 text-sm text-[#6B7280]">
                         <i className={`fa-solid ${s.icon} text-[11px] text-[#F97316]`}></i>
                         {s.label}
