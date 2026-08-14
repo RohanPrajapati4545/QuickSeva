@@ -34,7 +34,7 @@ const UserRoute = require("./routes/userRoute");
 const VendorBookingRoute = require("./routes/vendorBookingRoute");
 const UserProfileRoute = require("./routes/userProfileRoute");
 const AdminRoute = require("./routes/AdminRoute");
-const ContentRoute = require("./routes/ContentRoute");
+const ContentRoute = require("./routes/ContentRoutes");
 
 app.use("/api/auth", AuthRoute);
 app.use("/api/vendor", VendorCategoryRoute);
