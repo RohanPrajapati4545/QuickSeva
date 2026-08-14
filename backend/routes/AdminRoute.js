@@ -31,7 +31,7 @@ const {
   deleteService,
 } = require("../controllers/AdminController");
 
-const { getHomeContent, updateHomeContent } = require("../controllers/HomeContentController");
+const { getHomeContent, updateHomeContent } = require("../controllers/HomeContentController"); //this is the mistake 
 const { getHeaderContent, updateHeaderContent } = require("../controllers/HeaderContentController");
 const { getAboutContent, updateAboutContent } = require("../controllers/AboutContentController");
 const { getContactContent, updateContactContent } = require("../controllers/ContactContentController");
