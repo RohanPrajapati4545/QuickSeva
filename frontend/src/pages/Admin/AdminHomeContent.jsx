@@ -3,12 +3,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const API_URL = process.env.REACT_APP_API_URL;
-// admin-protected endpoints (authMiddleware + adminMiddleware), same base
-// your other admin panel pages already call for users/vendors/categories
 const CONTENT_API = `${API_URL}/api/admin/home-content`;
 
-// same shape/defaults as HomeContentSchema.js — used only until the real
-// fetch resolves, so the form isn't empty/undefined for a moment
 const EMPTY_CONTENT = {
   heroBadgeText: "",
   heroTitleLine1: "",
@@ -58,9 +54,6 @@ const EMPTY_CONTENT = {
   googlePlayText: "",
 };
 
-// Which top-level content fields belong to each section card. Used to build
-// a partial payload so each section's Save button only sends (and only
-// touches) its own fields — the backend already supports partial updates.
 const SECTION_FIELDS = {
   hero: [
     "heroBadgeText",
@@ -80,7 +73,6 @@ const SECTION_FIELDS = {
   app: ["appEyebrow", "appTitle", "appSubtitle", "appStoreText", "googlePlayText"],
 };
 
-// Small reusable bits so the form below stays readable
 const Field = ({ label, value, onChange, textarea = false }) => (
   <div className="mb-4">
     <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-[#6B7280]">{label}</label>
@@ -102,9 +94,6 @@ const Field = ({ label, value, onChange, textarea = false }) => (
   </div>
 );
 
-// Each section is its own self-contained card with its own Save button and
-// its own success/error message, so saving one section never depends on —
-// or scrolls you away to — the rest of the form.
 const SectionCard = ({ title, children, onSave, saving, status }) => (
   <div className="mb-6 rounded-2xl border border-[#E5E7EB] bg-white p-5">
     <h2 className="mb-4 text-base font-bold text-[#1F2937]">{title}</h2>
@@ -136,16 +125,15 @@ const SectionCard = ({ title, children, onSave, saving, status }) => (
 const AdminHomeContent = () => {
   const [content, setContent] = useState(EMPTY_CONTENT);
   const [loading, setLoading] = useState(true);
-const navigate=useNavigate()
-  // per-section saving/status, keyed by SECTION_FIELDS key (e.g. "hero")
+  const navigate = useNavigate();
+
   const [savingSection, setSavingSection] = useState(null);
   const [sectionStatus, setSectionStatus] = useState({});
 
-  // authMiddleware expects the same token your other admin pages already
-  // send (users/vendors/categories tables) — adjust the localStorage key
-  // below if your login flow stores it under a different name.
+  // token is stored under the "token" key by authSlice.js (login reducer),
+  // not "adminToken" — must match exactly or authMiddleware returns 401
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("adminToken");
+    const token = localStorage.getItem("token");
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
@@ -165,12 +153,10 @@ const navigate=useNavigate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // top-level scalar field, e.g. "heroTitleLine1"
   const handleChange = (field, value) => {
     setContent((prev) => ({ ...prev, [field]: value }));
   };
 
-  // one field inside one item of an array field, e.g. arrayName="whyUs", index=0, field="title"
   const handleArrayItemChange = (arrayName, index, field, value) => {
     setContent((prev) => {
       const updated = [...prev[arrayName]];
@@ -179,8 +165,6 @@ const navigate=useNavigate()
     });
   };
 
-  // Saves just one section's fields. sectionKey must match a key in
-  // SECTION_FIELDS above.
   const handleSaveSection = async (sectionKey) => {
     const fields = SECTION_FIELDS[sectionKey];
     const payload = fields.reduce((acc, field) => {
@@ -218,11 +202,11 @@ const navigate=useNavigate()
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6">
         <button
-        onClick={() => navigate("/admin/settings")}
-        className="vd-body mt-6 rounded-xl border border-[#E5E7EB] px-5 py-2.5 text-sm font-semibold text-[#1F2937] hover:bg-[#F8FAFC]"
-      >
-        ← Back to Settings
-      </button>
+          onClick={() => navigate("/admin/settings")}
+          className="vd-body mt-6 rounded-xl border border-[#E5E7EB] px-5 py-2.5 text-sm font-semibold text-[#1F2937] hover:bg-[#F8FAFC]"
+        >
+          ← Back to Settings
+        </button>
         <h1 className="text-xl font-extrabold text-[#1F2937]">Home Page Content</h1>
         <p className="mt-1 text-sm text-[#6B7280]">Each section saves independently — edit one and hit its Save button.</p>
       </div>

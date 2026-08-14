@@ -8,22 +8,7 @@ const getOrCreateHeaderContent = async () => {
   return content;
 };
 
-const parseArrayField = (value, fieldName) => {
-  let parsed = value;
-  if (typeof value === "string") {
-    try {
-      parsed = JSON.parse(value);
-    } catch (e) {
-      throw new Error(`${fieldName} must be valid JSON`);
-    }
-  }
-  if (!Array.isArray(parsed)) {
-    throw new Error(`${fieldName} must be an array`);
-  }
-  return parsed;
-};
-
-// PUBLIC — used by the site header on every page load
+// PUBLIC — used by Header.jsx on every page load
 exports.getHeaderContent = async (req, res) => {
   try {
     const content = await getOrCreateHeaderContent();
@@ -34,25 +19,19 @@ exports.getHeaderContent = async (req, res) => {
   }
 };
 
-// ADMIN ONLY
+// ADMIN ONLY — multipart/form-data when a new logo file is sent,
+// upload.single("logoImage") (Cloudinary storage) runs before this
 exports.updateHeaderContent = async (req, res) => {
   try {
-    const { logoText, logoIcon, navLinks, ctaText, ctaLink, topBarText } = req.body;
+    const { logoText } = req.body;
 
     const content = await getOrCreateHeaderContent();
 
     if (logoText !== undefined) content.logoText = logoText;
-    if (logoIcon !== undefined) content.logoIcon = logoIcon;
-    if (ctaText !== undefined) content.ctaText = ctaText;
-    if (ctaLink !== undefined) content.ctaLink = ctaLink;
-    if (topBarText !== undefined) content.topBarText = topBarText;
 
-    if (navLinks !== undefined) {
-      const parsed = parseArrayField(navLinks, "navLinks");
-      content.navLinks = parsed.map((l) => ({
-        label: l.label || "",
-        path: l.path || "/",
-      }));
+    // req.file.path is already a full Cloudinary URL — store as-is
+    if (req.file) {
+      content.logoImage = req.file.path;
     }
 
     await content.save();

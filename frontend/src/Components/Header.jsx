@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
+import axios from "axios";
 import { logout } from "./../pages/Redux/AuthSlice";
- 
+
 const NAV_LINKS = [
   { label: "Home", path: "/" },
   { label: "Services", path: "/services", dropdown: true },
@@ -28,6 +29,9 @@ const SERVICE_LINKS = [
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
+// used only for locally-stored files (e.g. user/vendor avatars uploaded to
+// /uploads on this server) — NOT for the header logo, which is a full
+// Cloudinary URL and must be used as-is
 const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
   if (/^https?:\/\//i.test(imagePath)) return imagePath;
@@ -42,6 +46,13 @@ const Header = () => {
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
   const [desktopServicesOpen, setDesktopServicesOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  // logo — fetched from /api/content/header, falls back to these defaults
+  // until the fetch resolves (or if it fails) so the header never looks empty.
+  // logoImage is a full Cloudinary URL — used directly, no prefixing.
+  const [logoText, setLogoText] = useState("QuickSeva");
+  const [logoImage, setLogoImage] = useState("");
+
   const menuRef = useRef(null);
   const servicesRef = useRef(null);
   const navigate = useNavigate();
@@ -49,6 +60,22 @@ const Header = () => {
 
   const { token, user } = useSelector((state) => state.auth || {});
   const avatarUrl = getImageUrl(user?.image);
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/api/content/header`);
+        if (res.data?.content) {
+          setLogoText(res.data.content.logoText || "QuickSeva");
+          setLogoImage(res.data.content.logoImage || "");
+        }
+      } catch (error) {
+        console.log(error);
+        // silently keep defaults — header shouldn't break if this fails
+      }
+    };
+    fetchLogo();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -148,11 +175,20 @@ const Header = () => {
       <header className={`hs-header sticky top-0 z-40 border-b border-[#E5E7EB] bg-white/90 backdrop-blur ${scrolled ? "hs-header-scrolled" : ""}`}>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-[18px] sm:px-6">
           <div className="hs-logo flex cursor-pointer items-center gap-2.5" onClick={() => goTo("/")}>
-            <span className="hs-logo-mark flex h-10 w-10 items-center justify-center rounded-xl bg-[#F97316] text-white">
-              <i className="fa-solid fa-bolt text-base"></i>
-            </span>
+            {logoImage ? (
+              <img
+                src={logoImage}
+                alt={logoText}
+                className="hs-logo-mark h-10 w-10 rounded-xl object-cover"
+                onError={(e) => (e.currentTarget.style.display = "none")}
+              />
+            ) : (
+              <span className="hs-logo-mark flex h-10 w-10 items-center justify-center rounded-xl bg-[#F97316] text-white">
+                <i className="fa-solid fa-bolt text-base"></i>
+              </span>
+            )}
             <span className="hs-display text-2xl font-extrabold text-[#1F2937]">
-              Quick<span className="text-[#F97316]">Seva</span>
+              {logoText}
             </span>
           </div>
 
@@ -235,8 +271,20 @@ const Header = () => {
         <div className="hs-overlay fixed inset-0 z-50 bg-[#1F2937]/50" onClick={() => setShowMobileNav(false)}>
           <div className="hs-drawer-panel ml-auto flex h-full w-72 flex-col rounded-l-3xl bg-white px-5 py-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <span className="hs-display text-lg font-extrabold text-[#1F2937]">
-                Quick<span className="text-[#F97316]">Seva</span>
+              <span className="hs-display flex items-center gap-2 text-lg font-extrabold text-[#1F2937]">
+                {logoImage ? (
+                  <img
+                    src={logoImage}
+                    alt={logoText}
+                    className="h-8 w-8 rounded-lg object-cover"
+                    onError={(e) => (e.currentTarget.style.display = "none")}
+                  />
+                ) : (
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#F97316] text-white">
+                    <i className="fa-solid fa-bolt text-sm"></i>
+                  </span>
+                )}
+                {logoText}
               </span>
               <i className="fa-solid fa-xmark cursor-pointer text-lg text-[#1F2937]" onClick={() => setShowMobileNav(false)}></i>
             </div>

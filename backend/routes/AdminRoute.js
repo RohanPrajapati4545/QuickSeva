@@ -31,7 +31,7 @@ const {
   deleteService,
 } = require("../controllers/AdminController");
 
-const { getHomeContent, updateHomeContent } = require("./../controllers/HomeCotentController"); //this is the mistake 
+const { getHomeContent, updateHomeContent } = require("./../controllers/HomeCotentController");
 const { getHeaderContent, updateHeaderContent } = require("./../controllers/HeaderContentController");
 const { getAboutContent, updateAboutContent } = require("./../controllers/AboutContentController");
 const { getContactContent, updateContactContent } = require("./../controllers/ContactContentController");
@@ -80,8 +80,9 @@ router.get("/home-content", authMiddleware, adminMiddleware, getHomeContent);
 router.put("/home-content", authMiddleware, adminMiddleware, updateHomeContent);
 
 // ===== HEADER CONTENT (logo / nav links / cta / top bar) =====
+// ===== HEADER CONTENT (logo text + logo image) =====
 router.get("/header-content", authMiddleware, adminMiddleware, getHeaderContent);
-router.put("/header-content", authMiddleware, adminMiddleware, updateHeaderContent);
+router.put( "/header-content", authMiddleware, adminMiddleware,  upload.single("logoImage"), updateHeaderContent);
 
 // ===== ABOUT PAGE CONTENT (hero / story / mission / values / stats / team) =====
 router.get("/about-content", authMiddleware, adminMiddleware, getAboutContent);
