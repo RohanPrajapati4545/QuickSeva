@@ -1,4 +1,4 @@
-const HomeContent = require("./../models/HomeContentSchema");
+const HomeContent = require("../models/HomeContentSchema");
 
 // There is only ever ONE home-content document (site-wide singleton).
 // If it doesn't exist yet (fresh DB), create it with schema defaults
@@ -88,7 +88,7 @@ exports.updateHomeContent = async (req, res) => {
     } = req.body;
 
     const content = await getOrCreateHomeContent();
-
+  // ;alskdjf n
     if (heroBadgeText !== undefined) content.heroBadgeText = heroBadgeText;
     if (heroTitleLine1 !== undefined) content.heroTitleLine1 = heroTitleLine1;
     if (heroTitleLine2 !== undefined) content.heroTitleLine2 = heroTitleLine2;
