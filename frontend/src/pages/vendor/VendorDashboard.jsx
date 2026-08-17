@@ -148,6 +148,36 @@ const VendorDashboard = () => {
     return () => { cancelled = true; };
   }, [token]);
 
+  // ── Reviews — just the summary (avgRating/totalReviews) for the stat
+  // card. Full list lives on the dedicated /vendor/reviews page.
+  const [avgRating, setAvgRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [ratingLoading, setRatingLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchRatingSummary = async () => {
+      setRatingLoading(true);
+      try {
+        const res = await axios.get(`${PROFILE_API}/reviews`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!cancelled) {
+          setAvgRating(res.data.avgRating || 0);
+          setTotalReviews(res.data.totalReviews || 0);
+        }
+      } catch (error) {
+        // dashboard ka koi non-critical stat hai — silently ignore
+      } finally {
+        if (!cancelled) setRatingLoading(false);
+      }
+    };
+
+    if (token) fetchRatingSummary();
+    return () => { cancelled = true; };
+  }, [token]);
+
   const activeCount = categories.filter((c) => c.status).length;
 
   // Total bookings — same list bookings.jsx shows, no date filtering.
@@ -174,11 +204,9 @@ const VendorDashboard = () => {
     },
     {
       key: "rating",
-      label: "Average rating",
-      value: "—",
-      // NOTE: no dedicated ratings/reviews route was in scope — pointing
-      // this at bookings for now. Swap the path if you have a reviews page.
-      onClick: () => navigate("/vendor/bookings"),
+      label: totalReviews > 0 ? `Average rating (${totalReviews})` : "Average rating",
+      value: totalReviews > 0 ? avgRating.toFixed(1) : "—",
+      onClick: () => navigate("/vendor/reviews"),
     },
   ];
 
@@ -245,6 +273,8 @@ const VendorDashboard = () => {
               {(s.key === "categories" || s.key === "active") && loading
                 ? "—"
                 : s.key === "bookings" && bookingsLoading
+                ? "—"
+                : s.key === "rating" && ratingLoading
                 ? "—"
                 : s.value}
             </p>

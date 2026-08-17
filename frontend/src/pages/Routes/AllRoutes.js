@@ -14,6 +14,7 @@ import VendorServices from "../vendor/vendorServices";
 import VendorServiceForm from "../vendor/VendorServiceForm";
 import VendorProfile from "../vendor/VendorProfile";
 import VendorBookings from "../vendor/VendorBookings";
+import VendorReviews from "../vendor/VendorReviews";
 import Services from "../Services";
 import VendorDetails from "../VendorDetails";
 
@@ -173,6 +174,7 @@ const AllRoutes = () => {
           <Route path="services/edit/:id" element={<VendorServiceForm />} />
           <Route path="profile" element={<VendorProfile />} />
           <Route path="bookings" element={<VendorBookings />} />
+          <Route path="reviews" element={<VendorReviews />} />
           
 <Route path="/vendor/bookings/:id" element={<VendorBookingDetails />} />
 <Route path="/vendor/services/:id" element={<VendorServiceDetails />} />

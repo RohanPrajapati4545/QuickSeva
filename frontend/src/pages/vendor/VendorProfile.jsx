@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 
@@ -19,57 +20,8 @@ const getImageUrl = (imagePath) => {
   return `${cleanBase}/${cleanPath}`;
 };
 
-// Same star-row style used across the customer-facing pages
-// (SingleService.jsx, Home.jsx) so ratings look consistent everywhere.
-function StarRow({ value = 0, size = "text-sm" }) {
-  return (
-    <div className={`relative inline-flex ${size} leading-none`}>
-      <div className="flex gap-0.5 text-[#E5E7EB]">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <i key={i} className="fa-solid fa-star"></i>
-        ))}
-      </div>
-      <div
-        className="absolute inset-0 flex gap-0.5 overflow-hidden text-[#F97316]"
-        style={{ width: `${Math.max(0, Math.min(5, value)) * 20}%` }}
-      >
-        {Array.from({ length: 5 }).map((_, i) => (
-          <i key={i} className="fa-solid fa-star"></i>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// 5→1 star distribution bars, derived purely from the reviews already
-// fetched — no extra API call.
-function RatingBreakdown({ reviews }) {
-  const total = reviews.length;
-  const counts = [5, 4, 3, 2, 1].map(
-    (star) => reviews.filter((r) => Math.round(r.rating) === star).length
-  );
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      {[5, 4, 3, 2, 1].map((star, i) => {
-        const count = counts[i];
-        const pct = total ? Math.round((count / total) * 100) : 0;
-        return (
-          <div key={star} className="flex items-center gap-2 text-xs text-[#6B7280]">
-            <span className="vp-body w-8 shrink-0 font-semibold text-[#1F2937]">{star}★</span>
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#F1F5F9]">
-              <div className="h-full rounded-full bg-[#F97316]" style={{ width: `${pct}%` }} />
-            </div>
-            <span className="w-6 shrink-0 text-right">{count}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 const VendorProfile = () => {
- 
+  const navigate = useNavigate();
   const { token } = useSelector((state) => state.auth || {});
 
   const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
@@ -96,14 +48,6 @@ const VendorProfile = () => {
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
 
-  // Reviews & ratings — every review left on any of this vendor's
-  // services, shown right here on the profile page.
-  const [reviews, setReviews] = useState([]);
-  const [avgRating, setAvgRating] = useState(0);
-  const [totalReviews, setTotalReviews] = useState(0);
-  const [reviewsLoading, setReviewsLoading] = useState(true);
-  const [ratingFilter, setRatingFilter] = useState("all");
-
   const fetchProfile = async () => {
     setLoading(true);
     try {
@@ -124,25 +68,8 @@ const VendorProfile = () => {
     }
   };
 
-  const fetchReviews = async () => {
-    setReviewsLoading(true);
-    try {
-      const res = await axios.get(`${PROFILE_API}/reviews`, authHeaders);
-      setReviews(res.data.reviews || []);
-      setAvgRating(res.data.avgRating || 0);
-      setTotalReviews(res.data.totalReviews || 0);
-    } catch (error) {
-      toast.error(error.response?.data?.msg || "Could not load reviews");
-    } finally {
-      setReviewsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (token) {
-      fetchProfile();
-      fetchReviews();
-    }
+    if (token) fetchProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -227,11 +154,6 @@ const VendorProfile = () => {
 
   const avatarSrc = imagePreview || getImageUrl(existingImage);
 
-  const filteredReviews =
-    ratingFilter === "all"
-      ? reviews
-      : reviews.filter((r) => Math.round(r.rating) === Number(ratingFilter));
-
   return (
     <div className="vp-body text-[#1F2937]">
       <style>{`
@@ -246,15 +168,27 @@ const VendorProfile = () => {
         .vp-avatar-upload { transition: border-color 0.2s ease, background-color 0.2s ease; }
         .vp-avatar-upload:hover { border-color: #F97316; background-color: #FFF7ED; }
         .vp-eye-toggle { transition: color 0.2s ease; }
-        .vp-chip { transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
-        @keyframes vpSpin { to { transform: rotate(360deg); } }
-        .vp-spin { animation: vpSpin 0.8s linear infinite; }
+        .vp-ratings-btn { transition: background-color 0.2s ease, border-color 0.2s ease; }
+        .vp-ratings-btn:hover { background-color: rgba(249,115,22,0.2); }
       `}</style>
 
-      <h1 className="vp-display text-2xl font-extrabold sm:text-3xl">My Profile</h1>
-      <p className="vp-body mt-1 text-sm text-[#6B7280]">
-        Update your personal and shop details.
-      </p>
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="vp-display text-2xl font-extrabold sm:text-3xl">My Profile</h1>
+          <p className="vp-body mt-1 text-sm text-[#6B7280]">
+            Update your personal and shop details.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => navigate("/vendor/reviews")}
+          className="vp-ratings-btn vp-body flex items-center gap-2 rounded-xl border border-[#F97316]/30 bg-[#F97316]/10 px-4 py-2.5 text-xs font-semibold text-[#F97316] sm:text-sm"
+        >
+          <i className="fa-solid fa-star text-[13px]"></i>
+          See all my ratings
+        </button>
+      </div>
 
       {/* Profile section — full width */}
       <form onSubmit={handleSubmit} className="mt-6 w-full">
@@ -362,147 +296,6 @@ const VendorProfile = () => {
           </div>
         </div>
       </form>
-
-      {/* Reviews & ratings section — full width, on this same page */}
-      <div className="mt-6 w-full">
-        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 sm:p-6">
-          <div className="flex items-center gap-2.5 border-b border-[#F1F5F9] pb-4">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F97316]/10 text-[#F97316]">
-              <i className="fa-solid fa-star text-sm"></i>
-            </span>
-            <div>
-              <h2 className="vp-display text-base font-bold leading-tight">Reviews &amp; ratings</h2>
-              <p className="vp-body text-xs text-[#6B7280]">What customers have said about your services</p>
-            </div>
-          </div>
-
-          {reviewsLoading ? (
-            <div className="flex items-center justify-center gap-2 py-12 text-sm text-[#6B7280]">
-              <i className="fa-solid fa-circle-notch vp-spin text-[#F97316]"></i>
-              Loading reviews…
-            </div>
-          ) : totalReviews === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F8FAFC] text-xl text-[#F97316]">
-                <i className="fa-regular fa-star"></i>
-              </span>
-              <p className="vp-body text-sm font-semibold">No reviews yet</p>
-              <p className="vp-body max-w-sm text-xs text-[#6B7280]">
-                Once customers rate a completed booking, their reviews will show up here.
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Summary */}
-              <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-[auto_1fr]">
-                <div className="flex flex-col items-center justify-center gap-1 border-b border-[#F1F5F9] pb-5 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-6">
-                  <span className="vp-display text-4xl font-extrabold text-[#1F2937]">
-                    {avgRating.toFixed(1)}
-                  </span>
-                  <StarRow value={avgRating} size="text-base" />
-                  <span className="vp-body mt-1 text-xs text-[#6B7280]">
-                    {totalReviews} review{totalReviews !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <RatingBreakdown reviews={reviews} />
-                </div>
-              </div>
-
-              {/* Filter chips */}
-              <div className="mt-5 flex flex-wrap gap-2 border-t border-[#F1F5F9] pt-5">
-                <span
-                  onClick={() => setRatingFilter("all")}
-                  className={`vp-chip vp-body cursor-pointer rounded-full border px-4 py-1.5 text-xs font-semibold ${
-                    ratingFilter === "all"
-                      ? "border-[#F97316] bg-[#F97316] text-white"
-                      : "border-[#E5E7EB] text-[#6B7280] hover:border-[#F97316]"
-                  }`}
-                >
-                  All ({totalReviews})
-                </span>
-                {[5, 4, 3, 2, 1].map((star) => {
-                  const count = reviews.filter((r) => Math.round(r.rating) === star).length;
-                  return (
-                    <span
-                      key={star}
-                      onClick={() => setRatingFilter(String(star))}
-                      className={`vp-chip vp-body cursor-pointer rounded-full border px-4 py-1.5 text-xs font-semibold ${
-                        ratingFilter === String(star)
-                          ? "border-[#F97316] bg-[#F97316] text-white"
-                          : "border-[#E5E7EB] text-[#6B7280] hover:border-[#F97316]"
-                      }`}
-                    >
-                      {star}★ ({count})
-                    </span>
-                  );
-                })}
-              </div>
-
-              {/* Review list — includes which service each rating was for */}
-              <div className="mt-4 divide-y divide-[#F1F5F9]">
-                {filteredReviews.length === 0 ? (
-                  <p className="vp-body py-8 text-center text-sm text-[#6B7280]">
-                    No reviews with this rating.
-                  </p>
-                ) : (
-                  filteredReviews.map((r) => {
-                    const avatarUrl = getImageUrl(r.user?.image);
-                    const initial = (r.user?.name || "U").charAt(0).toUpperCase();
-                    return (
-                      <div key={r._id} className="flex gap-3 py-4">
-                        {avatarUrl ? (
-                          <img
-                            src={avatarUrl}
-                            alt=""
-                            className="h-10 w-10 shrink-0 rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F97316]/15 text-sm font-bold text-[#F97316]">
-                            {initial}
-                          </span>
-                        )}
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                            <p className="vp-body truncate text-sm font-semibold">
-                              {r.user?.name || "Customer"}
-                            </p>
-                            <span className="vp-body text-[11px] text-[#9CA3AF]">
-                              {r.createdAt &&
-                                new Date(r.createdAt).toLocaleDateString("en-IN", {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                })}
-                            </span>
-                          </div>
-
-                          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-                            <StarRow value={r.rating} size="text-xs" />
-                            {r.service?.service_name && (
-                              <span className="vp-body inline-flex items-center gap-1 rounded-full bg-[#F8FAFC] px-2 py-0.5 text-[11px] font-medium text-[#6B7280]">
-                                <i className="fa-solid fa-tags text-[10px] text-[#F97316]"></i>
-                                {r.service.service_name}
-                              </span>
-                            )}
-                          </div>
-
-                          {r.comment && (
-                            <p className="vp-body mt-2 text-sm leading-relaxed text-[#374151]">
-                              {r.comment}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
 
       {/* Password section — full width, below */}
       <form onSubmit={handlePasswordSubmit} className="mt-6 w-full">
