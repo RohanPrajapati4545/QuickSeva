@@ -18,5 +18,6 @@ router.put("/cancel-booking/:id", AuthMiddleware, UserController.cancelMyBooking
 // ===== REVIEWS =====
 router.post("/booking/:bookingId/review", AuthMiddleware, UserController.addReview);
 router.get("/service/:id/reviews", UserController.getServiceReviews);
+router.get("/reviews/recent", UserController.getRecentReviews);
 
 module.exports = router;

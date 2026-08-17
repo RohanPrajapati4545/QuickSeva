@@ -8,6 +8,9 @@ const BASE_URL = process.env.REACT_APP_API_URL;
 // Admin-editable home content — these are just the render defaults so the
 // page still looks right the instant it mounts, before the fetch resolves.
 // Keep this in sync with the schema defaults in HomeContentSchema.js.
+// NOTE: `reviews` used to hold hardcoded testimonial copy, but the reviews
+// section now renders real customer reviews fetched from the API — only
+// reviewsEyebrow / reviewsTitle (the section header) still come from here.
 const DEFAULT_CONTENT = {
   heroBadgeText: "Trusted by 50,000+ homes",
   heroTitleLine1: "Every home fix,",
@@ -45,11 +48,6 @@ const DEFAULT_CONTENT = {
 
   reviewsEyebrow: "Real feedback",
   reviewsTitle: "What customers say",
-  reviews: [
-    { name: "Priya Nair", role: "Homeowner, Pune", quote: "Booked an AC service at 9pm and had someone at the door by 10 the next morning. Priced exactly as shown." },
-    { name: "Karan Mehta", role: "Tenant, Ahmedabad", quote: "The electrician sent a photo ID before arriving. Small thing, but it made me trust the whole platform instantly." },
-    { name: "Divya Shah", role: "Homeowner, Surat", quote: "Washing machine drum issue fixed in one visit. No upsell, no hidden parts cost — just the quote I'd agreed to." },
-  ],
 
   appEyebrow: "On the go",
   appTitle: "Book, track and pay — right from your pocket.",
@@ -100,6 +98,20 @@ function Reveal({ children, delay = 0, className = "" }) {
   return (
     <div ref={ref} className={`hs-reveal ${visible ? "hs-reveal-visible" : ""} ${className}`} style={{ transitionDelay: `${delay}s` }}>
       {children}
+    </div>
+  );
+}
+
+// Static star row used inside the review cards.
+function StarRow({ value = 0 }) {
+  return (
+    <div className="flex gap-1 text-[#F97316]">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <i
+          key={i}
+          className={`fa-solid fa-star text-xs ${i < Math.round(value) ? "" : "text-[#E5E7EB]"}`}
+        ></i>
+      ))}
     </div>
   );
 }
@@ -163,14 +175,17 @@ const Home = () => {
   const navigate = useNavigate();
   const [serviceQuery, setServiceQuery] = useState("");
 
-  // Admin-editable static copy (hero, why-us, how-it-works, reviews, app promo).
+  // Admin-editable static copy (hero, why-us, how-it-works, app promo).
   const [content, setContent] = useState(DEFAULT_CONTENT);
 
-  // Live data (categories / featured services / featured vendors).
+  // Live data (categories / featured services / featured vendors / reviews).
   const [categories, setCategories] = useState([]);
   const [featuredServices, setFeaturedServices] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [homeLoading, setHomeLoading] = useState(true);
+
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
   const debouncedQuery = useDebouncedValue(serviceQuery, 400);
   const [suggestOpen, setSuggestOpen] = useState(false);
@@ -188,7 +203,7 @@ const Home = () => {
       try {
         const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/content/home`);
         if (res.data?.content) {
-          setContent(res.data.content);
+          setContent((prev) => ({ ...prev, ...res.data.content }));
         }
       } catch (error) {
         console.log("Failed to load home content, using defaults:", error);
@@ -217,6 +232,24 @@ const Home = () => {
       }
     };
     fetchHomeData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Real customer reviews (with rating + comment) for the testimonials
+  // section — replaces the old hardcoded content.reviews array.
+  useEffect(() => {
+    const fetchReviews = async () => {
+      setReviewsLoading(true);
+      try {
+        const res = await axios.get(`${USER_APIBASE}/reviews/recent`, { params: { limit: 6 } });
+        setReviews(res.data.reviews || []);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+    fetchReviews();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -317,6 +350,8 @@ const Home = () => {
         .hs-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -22px rgba(31,41,55,0.18); border-color: #F97316; }
         .hs-icon-tile { transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease; }
         .hs-card:hover .hs-icon-tile { background-color: #F97316; color: #FFFFFF; transform: scale(1.05); }
+
+        .hs-rating-badge { position: absolute; bottom: 8px; left: 8px; }
 
         .hs-cta-primary { background-color: #F97316; transition: background-color 0.25s ease, transform 0.25s ease, box-shadow .25s ease; box-shadow: 0 14px 28px -14px rgba(249,115,22,0.55); }
         .hs-cta-primary:hover { background-color: #EA580C; transform: translateY(-2px); }
@@ -609,6 +644,9 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Real customer reviews — fetched from /api/user/reviews/recent.
+          Only shows up once genuine reviews exist; falls back to a friendly
+          empty state instead of ever showing fake testimonials. */}
       <section className="px-4 py-14 sm:px-6 lg:py-20">
         <div className="mx-auto max-w-7xl">
           <Reveal className="mx-auto max-w-xl text-center">
@@ -616,22 +654,46 @@ const Home = () => {
             <h2 className="hs-display mt-2 text-2xl font-extrabold text-[#1F2937] sm:text-3xl">{content.reviewsTitle}</h2>
           </Reveal>
 
-          <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-3">
-            {content.reviews.map((r, i) => (
-              <Reveal key={r.name || i} delay={i * 0.1}>
-                <div className="hs-card h-full rounded-2xl border border-[#E5E7EB] bg-white p-5">
-                  <div className="flex gap-1 text-[#F97316]">
-                    {Array.from({ length: 5 }).map((_, idx) => (
-                      <i key={idx} className="fa-solid fa-star text-xs"></i>
-                    ))}
-                  </div>
-                  <p className="hs-body mt-4 text-sm leading-relaxed text-[#374151]">“{r.quote}”</p>
-                  <div className="hs-display mt-5 text-sm font-bold text-[#1F2937]">{r.name}</div>
-                  <div className="hs-body text-xs text-[#6B7280]">{r.role}</div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+          {reviewsLoading ? (
+            <div className="mt-9 flex items-center justify-center gap-2 py-10 text-sm text-[#6B7280]">
+              <i className="fa-solid fa-circle-notch hs-spin text-[#F97316]"></i>
+              Loading reviews…
+            </div>
+          ) : reviews.length === 0 ? (
+            <p className="mt-9 text-center text-sm text-[#6B7280]">
+              No reviews yet — be the first to book a service and share your experience.
+            </p>
+          ) : (
+            <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-3">
+              {reviews.map((r, i) => {
+                const avatarUrl = getImageUrl(r.user?.image);
+                const initial = (r.user?.name || "U").charAt(0).toUpperCase();
+                return (
+                  <Reveal key={r._id} delay={i * 0.1}>
+                    <div className="hs-card h-full rounded-2xl border border-[#E5E7EB] bg-white p-5">
+                      <StarRow value={r.rating} />
+                      <p className="hs-body mt-4 text-sm leading-relaxed text-[#374151]">“{r.comment}”</p>
+                      <div className="mt-5 flex items-center gap-3">
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt="" className="h-10 w-10 rounded-full object-cover" />
+                        ) : (
+                          <span className="hs-avatar hs-display flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white">
+                            {initial}
+                          </span>
+                        )}
+                        <div>
+                          <div className="hs-display text-sm font-bold text-[#1F2937]">{r.user?.name || "QuickSeva user"}</div>
+                          {r.service?.service_name && (
+                            <div className="hs-body text-xs text-[#6B7280]">{r.service.service_name}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </Reveal>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 

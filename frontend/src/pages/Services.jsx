@@ -26,6 +26,28 @@ function useDebouncedValue(value, delay = 400) {
   return debounced;
 }
 
+// Compact star row for cards — filled up to `value` (supports decimals like
+// 4.3 via a width-clipped overlay so it's not just rounded to a whole star).
+function StarRow({ value = 0, size = "text-[11px]" }) {
+  return (
+    <div className={`relative inline-flex ${size} leading-none`}>
+      <div className="flex gap-0.5 text-[#E5E7EB]">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <i key={i} className="fa-solid fa-star"></i>
+        ))}
+      </div>
+      <div
+        className="absolute inset-0 flex gap-0.5 overflow-hidden text-[#F97316]"
+        style={{ width: `${Math.max(0, Math.min(5, value)) * 20}%` }}
+      >
+        {Array.from({ length: 5 }).map((_, i) => (
+          <i key={i} className="fa-solid fa-star"></i>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const Services = () => {
   const navigate = useNavigate();
   const { categorySlug } = useParams();
@@ -180,42 +202,65 @@ const Services = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {services.map((s) => (
-                <div
-                  key={s._id}
-                  onClick={() => handleServiceClick(s._id)}
-                  className="sv-card cursor-pointer border border-[#E5E7EB] bg-white p-4"
-                >
-                  {s.image ? (
-                    <img src={getImageUrl(s.image)} alt="" className="h-36 w-full rounded-xl object-cover" />
-                  ) : (
-                    <div className="flex h-36 w-full items-center justify-center rounded-xl bg-[#F8FAFC] text-[#F97316]">
-                      <i className={`fa-solid ${s.category?.icon || "fa-tags"} text-3xl`}></i>
+              {services.map((s) => {
+                const avgRating = s.avgRating || 0;
+                const reviewCount = s.reviewCount || 0;
+                return (
+                  <div
+                    key={s._id}
+                    onClick={() => handleServiceClick(s._id)}
+                    className="sv-card cursor-pointer border border-[#E5E7EB] bg-white p-4"
+                  >
+                    <div className="relative">
+                      {s.image ? (
+                        <img src={getImageUrl(s.image)} alt="" className="h-36 w-full rounded-xl object-cover" />
+                      ) : (
+                        <div className="flex h-36 w-full items-center justify-center rounded-xl bg-[#F8FAFC] text-[#F97316]">
+                          <i className={`fa-solid ${s.category?.icon || "fa-tags"} text-3xl`}></i>
+                        </div>
+                      )}
+                      {reviewCount > 0 && (
+                        <span className="sv-body absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-white/95 px-2 py-1 text-[11px] font-bold text-[#1F2937] shadow-sm">
+                          <i className="fa-solid fa-star text-[10px] text-[#F97316]"></i>
+                          {avgRating.toFixed(1)}
+                        </span>
+                      )}
                     </div>
-                  )}
 
-                  <div className="mt-3 flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="sv-display truncate text-sm font-bold text-[#1F2937]">{s.service_name}</h3>
-                      <p className="sv-body mt-0.5 text-xs text-[#6B7280]">{s.category?.category_name}</p>
+                    <div className="mt-3 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="sv-display truncate text-sm font-bold text-[#1F2937]">{s.service_name}</h3>
+                        <p className="sv-body mt-0.5 text-xs text-[#6B7280]">{s.category?.category_name}</p>
+                      </div>
+                      <span className="sv-display shrink-0 text-sm font-extrabold text-[#F97316]">₹{s.price}</span>
                     </div>
-                    <span className="sv-display shrink-0 text-sm font-extrabold text-[#F97316]">₹{s.price}</span>
-                  </div>
 
-                  {s.description && (
-                    <p className="sv-body mt-2 line-clamp-2 text-xs text-[#6B7280]">{s.description}</p>
-                  )}
+                    <div className="sv-body mt-1.5 flex items-center gap-1.5">
+                      <StarRow value={avgRating} />
+                      {reviewCount > 0 ? (
+                        <span className="text-[11px] text-[#9CA3AF]">
+                          {avgRating.toFixed(1)} ({reviewCount})
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-[#9CA3AF]">No reviews yet</span>
+                      )}
+                    </div>
 
-                  <div className="mt-3 flex items-center gap-2 border-t border-[#E5E7EB] pt-3">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F97316]/15 text-[#F97316]">
-                      <i className="fa-solid fa-store text-[11px]"></i>
-                    </span>
-                    <span className="sv-body truncate text-xs font-semibold text-[#1F2937]">
-                      {s.vendor?.shop_name || s.vendor?.name || "Vendor"}
-                    </span>
+                    {s.description && (
+                      <p className="sv-body mt-2 line-clamp-2 text-xs text-[#6B7280]">{s.description}</p>
+                    )}
+
+                    <div className="mt-3 flex items-center gap-2 border-t border-[#E5E7EB] pt-3">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F97316]/15 text-[#F97316]">
+                        <i className="fa-solid fa-store text-[11px]"></i>
+                      </span>
+                      <span className="sv-body truncate text-xs font-semibold text-[#1F2937]">
+                        {s.vendor?.shop_name || s.vendor?.name || "Vendor"}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

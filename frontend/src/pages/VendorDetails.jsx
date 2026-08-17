@@ -15,6 +15,28 @@ const getImageUrl = (imagePath) => {
   return `${cleanBase}/${cleanPath}`;
 };
 
+// Compact star row for cards — filled up to `value` (supports decimals like
+// 4.3 via a width-clipped overlay so it's not just rounded to a whole star).
+function StarRow({ value = 0, size = "text-[11px]" }) {
+  return (
+    <div className={`relative inline-flex ${size} leading-none`}>
+      <div className="flex gap-0.5 text-[#E5E7EB]">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <i key={i} className="fa-solid fa-star"></i>
+        ))}
+      </div>
+      <div
+        className="absolute inset-0 flex gap-0.5 overflow-hidden text-[#F97316]"
+        style={{ width: `${Math.max(0, Math.min(5, value)) * 20}%` }}
+      >
+        {Array.from({ length: 5 }).map((_, i) => (
+          <i key={i} className="fa-solid fa-star"></i>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const VendorDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -112,39 +134,55 @@ const VendorDetails = () => {
             <p className="vdt-body mt-4 text-sm text-[#6B7280]">This vendor hasn't listed any services yet.</p>
           ) : (
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {services.map((s) => (
-                <div
-                  key={s._id}
-                  onClick={() => handleServiceClick(s._id)}
-                  className="vdt-card cursor-pointer border border-[#E5E7EB] p-4"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="vdt-display text-sm font-bold text-[#1F2937]">{s.service_name}</h3>
-                      <p className="vdt-body mt-0.5 text-xs text-[#6B7280]">
-                        <i className={`fa-solid ${s.category?.icon || "fa-tags"} mr-1 text-[#F97316]`}></i>
-                        {s.category?.category_name}
-                      </p>
+              {services.map((s) => {
+                const avgRating = s.avgRating || 0;
+                const reviewCount = s.reviewCount || 0;
+                return (
+                  <div
+                    key={s._id}
+                    onClick={() => handleServiceClick(s._id)}
+                    className="vdt-card cursor-pointer border border-[#E5E7EB] p-4"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="vdt-display text-sm font-bold text-[#1F2937]">{s.service_name}</h3>
+                        <p className="vdt-body mt-0.5 text-xs text-[#6B7280]">
+                          <i className={`fa-solid ${s.category?.icon || "fa-tags"} mr-1 text-[#F97316]`}></i>
+                          {s.category?.category_name}
+                        </p>
+                      </div>
+                      <span className="vdt-display shrink-0 text-sm font-extrabold text-[#F97316]">₹{s.price}</span>
                     </div>
-                    <span className="vdt-display shrink-0 text-sm font-extrabold text-[#F97316]">₹{s.price}</span>
+
+                    <div className="vdt-body mt-2 flex items-center gap-1.5">
+                      <StarRow value={avgRating} />
+                      {reviewCount > 0 ? (
+                        <span className="text-[11px] text-[#9CA3AF]">
+                          {avgRating.toFixed(1)} ({reviewCount})
+                        </span>
+                      ) : (
+                        <span className="text-[11px] text-[#9CA3AF]">No reviews yet</span>
+                      )}
+                    </div>
+
+                    {s.description && (
+                      <p className="vdt-body mt-2 text-xs text-[#6B7280]">{s.description}</p>
+                    )}
+                    <div className="mt-3 flex items-center justify-end border-t border-[#F1F5F9] pt-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleServiceClick(s._id);
+                        }}
+                        className="vdt-body flex items-center gap-1.5 text-xs font-semibold text-[#F97316] hover:text-[#EA580C]"
+                      >
+                        See details
+                        <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                      </button>
+                    </div>
                   </div>
-                  {s.description && (
-                    <p className="vdt-body mt-2 text-xs text-[#6B7280]">{s.description}</p>
-                  )}
-                  <div className="mt-3 flex items-center justify-end border-t border-[#F1F5F9] pt-3">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleServiceClick(s._id);
-                      }}
-                      className="vdt-body flex items-center gap-1.5 text-xs font-semibold text-[#F97316] hover:text-[#EA580C]"
-                    >
-                      See details
-                      <i className="fa-solid fa-arrow-right text-[10px]"></i>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
