@@ -12,6 +12,9 @@ const CATEGORY_API = `${process.env.REACT_APP_API_URL}/api/vendor`;
 // mounted in your server, e.g. app.use("/api/vendor-profile", ...).
 const PROFILE_API = `${process.env.REACT_APP_API_URL}/api/vendor-profile`;
 
+// Mounted as app.use("/api/vendor-booking", VendorBookingRoute) on the server.
+const BOOKING_API = `${process.env.REACT_APP_API_URL}/api/vendor-booking`;
+
 const STAT_ICONS = {
   categories: "fa-tags",
   active: "fa-circle-check",
@@ -91,6 +94,7 @@ const VendorDashboard = () => {
     fetchMyProfile();
   }, [token, fetchMyProfile]);
 
+  // ── Categories ──────────────────────────────────────────────────────
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -117,13 +121,65 @@ const VendorDashboard = () => {
     return () => { cancelled = true; };
   }, [token]);
 
+  // ── Bookings — self-contained call, doesn't depend on any other file ──
+  const [bookings, setBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchBookings = async () => {
+      setBookingsLoading(true);
+      try {
+        const res = await axios.get(`${BOOKING_API}/all-bookings`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!cancelled) setBookings(res.data.bookings || []);
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(error.response?.data?.msg || "Could not load bookings");
+        }
+      } finally {
+        if (!cancelled) setBookingsLoading(false);
+      }
+    };
+
+    if (token) fetchBookings();
+    return () => { cancelled = true; };
+  }, [token]);
+
   const activeCount = categories.filter((c) => c.status).length;
 
+  // Total bookings — same list bookings.jsx shows, no date filtering.
+  const totalBookings = bookings.length;
+
   const stats = [
-    { key: "categories", label: "Total categories", value: categories.length },
-    { key: "active", label: "Active categories", value: activeCount },
-    { key: "bookings", label: "Bookings this month", value: "—" },
-    { key: "rating", label: "Average rating", value: "—" },
+    {
+      key: "categories",
+      label: "Total categories",
+      value: categories.length,
+      onClick: () => navigate("/vendor/categories"),
+    },
+    {
+      key: "active",
+      label: "Active categories",
+      value: activeCount,
+      onClick: () => navigate("/vendor/categories"),
+    },
+    {
+      key: "bookings",
+      label: "Total bookings",
+      value: totalBookings,
+      onClick: () => navigate("/vendor/bookings"),
+    },
+    {
+      key: "rating",
+      label: "Average rating",
+      value: "—",
+      // NOTE: no dedicated ratings/reviews route was in scope — pointing
+      // this at bookings for now. Swap the path if you have a reviews page.
+      onClick: () => navigate("/vendor/bookings"),
+    },
   ];
 
   return (
@@ -135,6 +191,10 @@ const VendorDashboard = () => {
 
         .vdd-card { border-radius: 16px; transition: box-shadow 0.25s ease, transform 0.25s ease; }
         .vdd-card:hover { box-shadow: 0 20px 40px -26px rgba(31,41,55,0.2); }
+
+        .vdd-stat { cursor: pointer; transition: box-shadow 0.25s ease, transform 0.15s ease; }
+        .vdd-stat:hover { box-shadow: 0 20px 40px -26px rgba(31,41,55,0.2); transform: translateY(-2px); }
+        .vdd-stat:active { transform: translateY(0); }
 
         .vdd-cta-primary { background-color: #F97316; transition: background-color 0.2s ease, transform 0.2s ease; }
         .vdd-cta-primary:hover { background-color: #EA580C; transform: translateY(-1px); }
@@ -163,18 +223,30 @@ const VendorDashboard = () => {
             Here's how your service categories are doing today.
           </p>
         </div>
-       
       </div>
 
-      {/* Stat cards */}
+      {/* Stat cards — all clickable */}
       <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.key} className="vdd-card border border-[#E5E7EB] bg-white p-4 sm:p-5">
+          <div
+            key={s.key}
+            onClick={s.onClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") s.onClick();
+            }}
+            className="vdd-card vdd-stat border border-[#E5E7EB] bg-white p-4 sm:p-5"
+          >
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F97316]/15 text-[#F97316]">
               <i className={`fa-solid ${STAT_ICONS[s.key]} text-sm`}></i>
             </div>
             <p className="vdd-display mt-3 text-2xl font-extrabold text-[#1F2937]">
-              {loading && (s.key === "categories" || s.key === "active") ? "—" : s.value}
+              {(s.key === "categories" || s.key === "active") && loading
+                ? "—"
+                : s.key === "bookings" && bookingsLoading
+                ? "—"
+                : s.value}
             </p>
             <p className="vdd-body mt-0.5 text-xs text-[#6B7280]">{s.label}</p>
           </div>

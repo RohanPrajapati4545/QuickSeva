@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
+import axios from "axios";
 import { logout } from "./../pages/Redux/AuthSlice";
 
 const NAV_ITEMS = [
@@ -13,10 +14,47 @@ const NAV_ITEMS = [
   { to: "/admin/settings", label: "Settings", icon: "fa-gear" },
 ];
 
+const API_URL = process.env.REACT_APP_API_URL;
+// Same public endpoint Header.jsx uses — logoImage comes back as a full
+// Cloudinary URL, so it's used as-is, no base-URL prefixing needed.
+const CONTENT_API = `${API_URL}/api/content/header`;
+
 const AdminSidebar = ({ onNavigate }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth || {});
+
+  // logo — fetched once on mount, falls back to "QuickSeva" + bolt icon
+  // until it resolves (or if it fails), so the sidebar never looks empty.
+  const [logoText, setLogoText] = useState("QuickSeva");
+  const [logoImage, setLogoImage] = useState("");
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const res = await axios.get(CONTENT_API);
+        if (res.data?.content) {
+          setLogoText(res.data.content.logoText || "QuickSeva");
+          setLogoImage(res.data.content.logoImage || "");
+        }
+      } catch (error) {
+        console.log(error);
+        // silently keep defaults — sidebar shouldn't break if this fails
+      }
+    };
+    fetchLogo();
+
+    // Instant sync: AdminHeaderContent fires this event right after a
+    // successful save, so the sidebar updates immediately without waiting
+    // for a route change/remount or re-fetching from the server.
+    const handleLogoUpdated = (e) => {
+      if (!e.detail) return;
+      setLogoText(e.detail.logoText || "QuickSeva");
+      setLogoImage(e.detail.logoImage || "");
+    };
+    window.addEventListener("headerLogoUpdated", handleLogoUpdated);
+    return () => window.removeEventListener("headerLogoUpdated", handleLogoUpdated);
+  }, []);
 
   const handleLogout = async () => {
     const result = await Swal.fire({
@@ -39,11 +77,20 @@ const AdminSidebar = ({ onNavigate }) => {
   return (
     <div className="vd-body flex h-full flex-col text-white">
       <div className="flex items-center gap-2 px-5 py-5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F97316] text-white">
-          <i className="fa-solid fa-shield-halved text-sm"></i>
-        </span>
+        {logoImage ? (
+          <img
+            src={logoImage}
+            alt={logoText}
+            className="h-9 w-9 rounded-lg object-cover"
+            onError={(e) => (e.currentTarget.style.display = "none")}
+          />
+        ) : (
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F97316] text-white">
+            <i className="fa-solid fa-shield-halved text-sm"></i>
+          </span>
+        )}
         <span className="vd-display text-lg font-extrabold">
-          Quick<span className="text-[#F97316]">Seva</span>
+          {logoText}
           <span className="ml-1 text-xs font-semibold text-white/50">Admin</span>
         </span>
       </div>
