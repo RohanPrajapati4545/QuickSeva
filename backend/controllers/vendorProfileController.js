@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/userSchema");
+const Review = require("../models/reviewSchema");
 const cloudinary = require("cloudinary").v2;
 
 // Extracts the Cloudinary public_id from a stored secure_url so we can
@@ -112,8 +113,40 @@ const changePassword = async (req, res) => {
   }
 };
 
+// ================= GET MY REVIEWS =================
+// GET /api/vendor-profile/reviews
+// Saari reviews jo is vendor ko (uski kisi bhi service par) mili hain —
+// reviewer (customer) ki info + kis service par review diya, dono ke saath.
+// Vendor profile page ke "Reviews & ratings" section ke liye.
+const getMyReviews = async (req, res) => {
+  try {
+    const vendorId = req.user.id || req.user._id;
+
+    const limit = Number(req.query.limit) || 100;
+
+    const reviews = await Review.find({ vendor: vendorId })
+      .populate("user", "name image")
+      .populate("service", "service_name image")
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    const totalReviews = reviews.length;
+    const avgRating = totalReviews
+      ? Math.round(
+          (reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews) * 10
+        ) / 10
+      : 0;
+
+    res.status(200).json({ reviews, avgRating, totalReviews });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ msg: "Internal server error" });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
+  getMyReviews,
 };

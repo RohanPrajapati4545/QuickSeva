@@ -26,6 +26,28 @@ const APPROVAL_STYLES = {
   rejected: "bg-red-50 text-red-500",
 };
 
+// Small inline star rating badge shown on each service row — pulled
+// straight from the denormalized avgRating/reviewCount fields on the
+// VendorService doc, no extra API call needed.
+const RatingBadge = ({ avgRating = 0, reviewCount = 0 }) => {
+  if (!reviewCount) {
+    return (
+      <span className="vs-body hidden shrink-0 items-center gap-1 text-xs text-[#9CA3AF] sm:flex">
+        <i className="fa-regular fa-star"></i>
+        No reviews
+      </span>
+    );
+  }
+
+  return (
+    <span className="vs-body hidden shrink-0 items-center gap-1 text-xs font-semibold text-[#1F2937] sm:flex">
+      <i className="fa-solid fa-star text-[#F97316]"></i>
+      {avgRating.toFixed(1)}
+      <span className="font-normal text-[#9CA3AF]">({reviewCount})</span>
+    </span>
+  );
+};
+
 // Shown in place of the whole page when the vendor's own account hasn't
 // been approved by admin yet — mirrors the empty-state / dashboard visual
 // language used elsewhere in the vendor panel.
@@ -314,6 +336,8 @@ const VendorServices = () => {
                     {s.category?.category_name || "—"}
                   </p>
                 </div>
+
+                <RatingBadge avgRating={s.avgRating || 0} reviewCount={s.reviewCount || 0} />
 
                 <p className="vs-body hidden shrink-0 text-sm font-bold text-[#F97316] sm:block">
                   ₹{s.price}

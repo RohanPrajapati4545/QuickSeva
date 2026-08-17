@@ -28,4 +28,14 @@ router.put(
   VendorProfileController.changePassword
 );
 
+// Saari reviews/ratings jo is vendor ko (uski kisi bhi service par) mile
+// hain — reviewer (customer) ki info ke saath. Vendor profile page ke
+// "Reviews" tab ke liye.
+router.get(
+  "/reviews",
+  authMiddleware,
+  vendorMiddleware,
+  VendorProfileController.getMyReviews
+);
+
 module.exports = router;
