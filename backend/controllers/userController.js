@@ -358,8 +358,7 @@ const cancelMyBooking = async (req, res) => {
   }
 };
 
-// Ek completed booking pe user apna review submit karta hai.
-// Ek booking = ek review (schema-level unique index bhi isko backstop karta hai).
+ 
 const addReview = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
@@ -411,8 +410,6 @@ const addReview = async (req, res) => {
   }
 };
 
-// Public endpoint — kisi bhi service ke saare reviews, sabse naye pehle.
-// Service details page yahi se reviews fetch karega.
 const getServiceReviews = async (req, res) => {
   try {
     const { id } = req.params;
@@ -420,26 +417,6 @@ const getServiceReviews = async (req, res) => {
 
     const reviews = await Review.find({ service: id })
       .populate("user", "name image")
-      .sort({ createdAt: -1 })
-      .limit(limit);
-
-    res.status(200).json({ reviews });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ msg: "Internal server error" });
-  }
-};
-
-// Public endpoint — platform-wide sabse recent reviews, jo comment ke saath
-// hain (khaali comment wale testimonial ke liye kaam ke nahi). Home page ke
-// "What customers say" section ke liye use hota hai.
-const getRecentReviews = async (req, res) => {
-  try {
-    const limit = Number(req.query.limit) || 6;
-
-    const reviews = await Review.find({ comment: { $ne: "" } })
-      .populate("user", "name image")
-      .populate("service", "service_name")
       .sort({ createdAt: -1 })
       .limit(limit);
 
@@ -461,5 +438,4 @@ module.exports = {
   cancelMyBooking,
   addReview,
   getServiceReviews,
-  getRecentReviews,
 };
