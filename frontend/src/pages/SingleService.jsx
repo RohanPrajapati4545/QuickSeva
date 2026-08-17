@@ -15,18 +15,42 @@ const getImageUrl = (imagePath) => {
   return `${cleanBase}/${cleanPath}`;
 };
 
+// Renders a static row of 5 stars, filled up to `value` (supports halves
+// via width-clipped overlay so 4.3 avg doesn't just round to 4 or 5).
+function StarRow({ value = 0, size = "text-sm" }) {
+  return (
+    <div className={`relative inline-flex ${size} leading-none`}>
+      <div className="flex gap-0.5 text-[#E5E7EB]">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <i key={i} className="fa-solid fa-star"></i>
+        ))}
+      </div>
+      <div
+        className="absolute inset-0 flex gap-0.5 overflow-hidden text-[#F97316]"
+        style={{ width: `${Math.max(0, Math.min(5, value)) * 20}%` }}
+      >
+        {Array.from({ length: 5 }).map((_, i) => (
+          <i key={i} className="fa-solid fa-star"></i>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const SingleService = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
   // ⚠️ ADJUST THIS: apne redux store ke actual slice/path se match karo.
   // Common patterns: state.auth.user, state.auth.token, state.user.currentUser
-  const {  token } = useSelector((state) => state.auth);
-   
+  const { token } = useSelector((state) => state.auth);
 
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
   const [form, setForm] = useState({
     customer_name: "",
@@ -37,10 +61,7 @@ const SingleService = () => {
     notes: "",
   });
 
-  
-
   useEffect(() => {
-   
     const fetchService = async () => {
       setLoading(true);
       try {
@@ -54,6 +75,22 @@ const SingleService = () => {
     };
     if (id) fetchService();
     window.scrollTo(0, 0);
+  }, [id]);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      setReviewsLoading(true);
+      try {
+        const res = await axios.get(`${USER_API}/service/${id}/reviews`);
+        setReviews(res.data.reviews || []);
+      } catch (error) {
+        // reviews load na ho paayein to bhi page break nahi hona chahiye
+        console.log(error);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+    if (id) fetchReviews();
   }, [id]);
 
   const handleChange = (e) => {
@@ -115,8 +152,6 @@ const SingleService = () => {
     }
   };
 
- 
-
   if (loading) {
     return (
       <div className="sd-body flex min-h-screen items-center justify-center gap-2 bg-white text-sm text-[#6B7280]">
@@ -154,6 +189,9 @@ const SingleService = () => {
       </div>
     );
   }
+
+  const avgRating = service.avgRating || 0;
+  const reviewCount = service.reviewCount || 0;
 
   return (
     <div className="sd-body min-h-screen bg-[#F8FAFC] text-[#1F2937]">
@@ -207,9 +245,22 @@ const SingleService = () => {
 
               <div className="p-5 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <h1 className="sd-display text-2xl font-extrabold leading-tight sm:text-3xl">
-                    {service.service_name}
-                  </h1>
+                  <div>
+                    <h1 className="sd-display text-2xl font-extrabold leading-tight sm:text-3xl">
+                      {service.service_name}
+                    </h1>
+                    <div className="mt-2 flex items-center gap-2">
+                      <StarRow value={avgRating} />
+                      <span className="sd-body text-xs font-semibold text-[#1F2937]">
+                        {avgRating > 0 ? avgRating.toFixed(1) : "New"}
+                      </span>
+                      {reviewCount > 0 && (
+                        <span className="sd-body text-xs text-[#9CA3AF]">
+                          ({reviewCount} review{reviewCount !== 1 ? "s" : ""})
+                        </span>
+                      )}
+                    </div>
+                  </div>
                   <span className="sd-display shrink-0 rounded-2xl bg-[#F97316]/10 px-4 py-1.5 text-xl font-extrabold text-[#F97316]">
                     ₹{service.price}
                   </span>
@@ -258,6 +309,66 @@ const SingleService = () => {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Reviews section */}
+            <div className="sd-card mt-6 border border-[#E5E7EB] bg-white p-5 shadow-[0_20px_45px_-30px_rgba(31,41,55,0.2)] sm:p-6">
+              <div className="flex items-center justify-between">
+                <h2 className="sd-display text-lg font-extrabold">Reviews</h2>
+                <div className="flex items-center gap-2">
+                  <StarRow value={avgRating} size="text-xs" />
+                  <span className="sd-body text-xs font-semibold text-[#1F2937]">
+                    {avgRating > 0 ? avgRating.toFixed(1) : "—"}
+                  </span>
+                </div>
+              </div>
+
+              {reviewsLoading ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-sm text-[#6B7280]">
+                  <i className="fa-solid fa-circle-notch sd-spin text-[#F97316]"></i>
+                  Loading reviews…
+                </div>
+              ) : reviews.length === 0 ? (
+                <p className="sd-body mt-4 text-sm text-[#6B7280]">
+                  No reviews yet — be the first to book and share your experience.
+                </p>
+              ) : (
+                <div className="mt-4 flex flex-col divide-y divide-[#F1F5F9]">
+                  {reviews.map((r) => (
+                    <div key={r._id} className="py-4 first:pt-0">
+                      <div className="flex items-center gap-3">
+                        {r.user?.image ? (
+                          <img
+                            src={getImageUrl(r.user.image)}
+                            alt=""
+                            className="h-9 w-9 shrink-0 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F97316]/15 text-xs font-bold text-[#F97316]">
+                            {(r.user?.name || "U").charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="sd-body truncate text-sm font-semibold">{r.user?.name || "User"}</p>
+                          <div className="mt-0.5 flex items-center gap-2">
+                            <StarRow value={r.rating} size="text-[11px]" />
+                            <span className="sd-body text-[11px] text-[#9CA3AF]">
+                              {new Date(r.createdAt).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {r.comment && (
+                        <p className="sd-body mt-2.5 text-sm leading-relaxed text-[#374151]">{r.comment}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

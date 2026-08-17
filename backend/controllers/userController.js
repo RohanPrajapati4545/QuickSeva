@@ -2,6 +2,7 @@ const VendorCategory = require("../models/vendorCategorySchema");
 const VendorService = require("../models/vendorServiceSchema");
 const User = require("../models/userSchema");
 const Booking = require("../models/bookingSchema");
+const Review = require("../models/reviewSchema");
 
 const slugify = (str) =>
   (str || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -17,6 +18,28 @@ const getApprovedVendorIds = async () => {
 
 const isVendorLive = (vendor) =>
   Boolean(vendor) && vendor.approvalStatus === "approved" && !vendor.isBlocked;
+
+// Recomputes avgRating + reviewCount on the VendorService doc from all
+// reviews currently attached to it. Called after a review is created so the
+// denormalized fields never drift out of sync.
+const recomputeServiceRating = async (serviceId) => {
+  const stats = await Review.aggregate([
+    { $match: { service: serviceId } },
+    {
+      $group: {
+        _id: "$service",
+        avgRating: { $avg: "$rating" },
+        reviewCount: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const avgRating = stats.length ? Math.round(stats[0].avgRating * 10) / 10 : 0;
+  const reviewCount = stats.length ? stats[0].reviewCount : 0;
+
+  await VendorService.findByIdAndUpdate(serviceId, { avgRating, reviewCount });
+};
+
 const getCategories = async (req, res) => {
   try {
     // Sirf un vendors ki services count karo jo khud approved & unblocked hain
@@ -145,6 +168,8 @@ const getServiceById = async (req, res) => {
       delete serviceObj.vendor.approvalStatus;
       delete serviceObj.vendor.isBlocked;
     }
+    // serviceObj.avgRating / serviceObj.reviewCount already come along from
+    // the schema fields — nothing extra to do here.
 
     res.status(200).json({ service: serviceObj });
   } catch (error) {
@@ -285,7 +310,24 @@ const getMyBookings = async (req, res) => {
       .populate("vendor", "name shop_name contact address")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ bookings });
+    // Completed bookings ke liye batao ki review already diya ja chuka hai
+    // ya nahi, taaki frontend "Add Review" vs "Reviewed" state dikha sake.
+    const completedIds = bookings
+      .filter((b) => b.status === "completed")
+      .map((b) => b._id);
+
+    let reviewedBookingIds = new Set();
+    if (completedIds.length > 0) {
+      const reviews = await Review.find({ booking: { $in: completedIds } }).select("booking");
+      reviewedBookingIds = new Set(reviews.map((r) => String(r.booking)));
+    }
+
+    const bookingsWithReviewFlag = bookings.map((b) => ({
+      ...b.toObject(),
+      hasReview: reviewedBookingIds.has(String(b._id)),
+    }));
+
+    res.status(200).json({ bookings: bookingsWithReviewFlag });
   } catch (error) {
     console.log(error);
     res.status(500).json({ msg: "Internal server error" });
@@ -316,6 +358,75 @@ const cancelMyBooking = async (req, res) => {
   }
 };
 
+ 
+const addReview = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ msg: "Unauthorized" });
+    }
+
+    const { bookingId } = req.params;
+    const { rating, comment } = req.body;
+
+    const ratingNum = Number(rating);
+    if (!ratingNum || ratingNum < 1 || ratingNum > 5) {
+      return res.status(400).json({ msg: "Rating must be between 1 and 5" });
+    }
+
+    const booking = await Booking.findOne({ _id: bookingId, user: userId });
+    if (!booking) {
+      return res.status(404).json({ msg: "Booking not found" });
+    }
+
+    if (booking.status !== "completed") {
+      return res.status(400).json({ msg: "You can only review a completed booking" });
+    }
+
+    const existing = await Review.findOne({ booking: booking._id });
+    if (existing) {
+      return res.status(400).json({ msg: "You have already reviewed this booking" });
+    }
+
+    const review = await Review.create({
+      booking: booking._id,
+      service: booking.service,
+      vendor: booking.vendor,
+      user: userId,
+      rating: ratingNum,
+      comment: (comment || "").trim(),
+    });
+
+    await recomputeServiceRating(booking.service);
+
+    res.status(201).json({ msg: "Review submitted successfully", review });
+  } catch (error) {
+    // duplicate key error agar koi race condition me dobara submit kare
+    if (error?.code === 11000) {
+      return res.status(400).json({ msg: "You have already reviewed this booking" });
+    }
+    console.log(error);
+    res.status(500).json({ msg: "Internal server error" });
+  }
+};
+
+const getServiceReviews = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const limit = Number(req.query.limit) || 20;
+
+    const reviews = await Review.find({ service: id })
+      .populate("user", "name image")
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    res.status(200).json({ reviews });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ msg: "Internal server error" });
+  }
+};
+
 module.exports = {
   getCategories,
   getServices,
@@ -325,4 +436,6 @@ module.exports = {
   bookService,
   getMyBookings,
   cancelMyBooking,
+  addReview,
+  getServiceReviews,
 };

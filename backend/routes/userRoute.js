@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const UserController = require("./../controllers/userController");
- 
+
 const AuthMiddleware = require("./../middlewares/AuthMiddleware");
 
 
@@ -11,9 +11,12 @@ router.get("/services", UserController.getServices);
 router.get("/service/:id", UserController.getServiceById);
 router.get("/vendor/:id", UserController.getVendorDetails);
 router.get("/featured-vendors", UserController.getFeaturedVendors);
-router.post("/service/:id/book",AuthMiddleware, UserController.bookService);
+router.post("/service/:id/book", AuthMiddleware, UserController.bookService);
 router.get("/my-bookings", AuthMiddleware, UserController.getMyBookings);
 router.put("/cancel-booking/:id", AuthMiddleware, UserController.cancelMyBooking);
 
+// ===== REVIEWS =====
+router.post("/booking/:bookingId/review", AuthMiddleware, UserController.addReview);
+router.get("/service/:id/reviews", UserController.getServiceReviews);
 
 module.exports = router;

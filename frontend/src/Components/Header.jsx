@@ -53,6 +53,10 @@ const Header = () => {
   const [logoText, setLogoText] = useState("QuickSeva");
   const [logoImage, setLogoImage] = useState("");
 
+  // tracks whether the avatar <img> actually failed to load, so we can
+  // fall back to the user icon instead of leaving a blank gap.
+  const [avatarError, setAvatarError] = useState(false);
+
   const menuRef = useRef(null);
   const servicesRef = useRef(null);
   const navigate = useNavigate();
@@ -60,6 +64,13 @@ const Header = () => {
 
   const { token, user } = useSelector((state) => state.auth || {});
   const avatarUrl = getImageUrl(user?.image);
+
+  // reset the error flag whenever the avatar source changes (e.g. after
+  // login, or when the user updates their profile picture) so a stale
+  // failure doesn't permanently hide a valid new image.
+  useEffect(() => {
+    setAvatarError(false);
+  }, [avatarUrl]);
 
   useEffect(() => {
     const fetchLogo = async () => {
@@ -119,6 +130,9 @@ const Header = () => {
       }
     });
   };
+
+  // whether we should actually attempt to render the <img> tag
+  const showAvatarImage = Boolean(avatarUrl) && !avatarError;
 
   return (
     <>
@@ -232,12 +246,12 @@ const Header = () => {
             <div className="relative" ref={menuRef}>
               {token ? (
                 <button onClick={() => setShowMenu((p) => !p)} className="block">
-                  {avatarUrl ? (
+                  {showAvatarImage ? (
                     <img
                       src={avatarUrl}
                       alt=""
                       className="h-10 w-10 rounded-full border-2 border-[#F97316] object-cover transition-transform hover:scale-105"
-                      onError={(e) => (e.currentTarget.style.display = "none")}
+                      onError={() => setAvatarError(true)}
                     />
                   ) : (
                     <i className="fa-solid fa-circle-user text-[26px] text-[#1F2937]"></i>
