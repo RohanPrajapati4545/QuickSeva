@@ -29,6 +29,7 @@ const {
   getServiceById,
   updateServiceApproval,
   deleteService,
+  getAllBookings,
 } = require("../controllers/AdminController");
 
 const { getHomeContent, updateHomeContent } = require("./../controllers/HomeCotentController");
@@ -74,6 +75,9 @@ router.get("/services/all-services", authMiddleware, adminMiddleware, getAllServ
 router.get("/services/service/:id", authMiddleware, adminMiddleware, getServiceById);
 router.put("/services/update-approval/:id", authMiddleware, adminMiddleware, updateServiceApproval);
 router.delete("/services/delete-service/:id", authMiddleware, adminMiddleware, deleteService);
+
+// ===== BOOKINGS (admin view, scoped to a vendor via ?vendor=<id>) =====
+router.get("/bookings/all-bookings", authMiddleware, adminMiddleware, getAllBookings);
 
 // ===== HOME PAGE CONTENT =====
 router.get("/home-content", authMiddleware, adminMiddleware, getHomeContent);

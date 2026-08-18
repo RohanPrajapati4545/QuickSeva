@@ -687,6 +687,82 @@ const User = require("../models/userSchema");
     }
     };
 
+    const BOOKING_USER_FIELDS = "name email image contact";
+    const BOOKING_SERVICE_FIELDS = "service_name image price";
+    const BOOKING_STATUSES = ["pending", "confirmed", "completed", "cancelled"];
+
+    // Admin listing of bookings, always scoped down to a single vendor via
+    // ?vendor=<vendorId> (that's how the "Bookings" page under a vendor's
+    // profile stays limited to services THAT vendor's customers actually
+    // booked, instead of every service the vendor has ever listed).
+    // Also supports the usual status tabs / search / pagination pattern
+    // used by the other admin list endpoints above.
+    const getAllBookings = async (req, res) => {
+    try {
+        const { vendor, status, q } = req.query;
+        const { page, limit, skip } = getPagination(req.query);
+
+        // baseFilter = vendor + search only, used for the tab counts so they
+        // stay correct no matter which status tab or page is selected.
+        const baseFilter = {};
+        if (vendor) baseFilter.vendor = vendor;
+
+        if (q && q.trim()) {
+        const regex = { $regex: escapeRegex(q.trim()), $options: "i" };
+
+        const [matchingUsers, matchingServices] = await Promise.all([
+            User.find({ role: "customer", $or: [{ name: regex }, { email: regex }] }).select("_id"),
+            VendorService.find({ service_name: regex }).select("_id"),
+        ]);
+
+        baseFilter.$or = [
+            { user: { $in: matchingUsers.map((u) => u._id) } },
+            { service: { $in: matchingServices.map((s) => s._id) } },
+        ];
+        }
+
+        const filter = { ...baseFilter };
+        if (status && status !== "all") filter.status = status;
+
+        const [bookings, total, pendingCount, confirmedCount, completedCount, cancelledCount] =
+        await Promise.all([
+            Booking.find(filter)
+            .populate("user", BOOKING_USER_FIELDS)
+            .populate("service", BOOKING_SERVICE_FIELDS)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit),
+            Booking.countDocuments(filter),
+            Booking.countDocuments({ ...baseFilter, status: "pending" }),
+            Booking.countDocuments({ ...baseFilter, status: "confirmed" }),
+            Booking.countDocuments({ ...baseFilter, status: "completed" }),
+            Booking.countDocuments({ ...baseFilter, status: "cancelled" }),
+        ]);
+
+        // `customer` alias added alongside `user` so the admin frontend can
+        // read booking.customer without caring what the schema calls it.
+        const formattedBookings = bookings.map((b) => {
+        const obj = b.toObject();
+        return { ...obj, customer: obj.user };
+        });
+
+        res.status(200).json({
+        bookings: formattedBookings,
+        pagination: buildPaginationMeta(page, limit, total),
+        counts: {
+            all: pendingCount + confirmedCount + completedCount + cancelledCount,
+            pending: pendingCount,
+            confirmed: confirmedCount,
+            completed: completedCount,
+            cancelled: cancelledCount,
+        },
+        });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ msg: "Internal server error" });
+    }
+    };
+
     module.exports = {
     getDashboardSummary,
     getAllUsers,
@@ -710,4 +786,5 @@ const User = require("../models/userSchema");
     getServiceById,
     updateServiceApproval,
     deleteService,
+    getAllBookings,
     };
