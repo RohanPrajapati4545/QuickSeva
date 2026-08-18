@@ -31,6 +31,7 @@ import AllUsers from "./../Admin/AllUsers";
 import UserDetails from "./../Admin/UserDetails";
 import AdminVendors from "./../Admin/AllVendors";
 import AdminVendorDetails from "./../Admin/VendorDetails";
+import AdminVendorBookings from "./../Admin/AdminVendorBookings";
 import AdminCategories from "./../Admin/AdminCategories";
 import AdminCategoryForm from "./../Admin/AdminCategoryForm";
 import AdminServices from "./../Admin/AdminServices";
@@ -200,6 +201,7 @@ const AllRoutes = () => {
           <Route path="users/:id" element={<UserDetails />} />
           <Route path="vendors" element={<AdminVendors />} />
           <Route path="vendors/:id" element={<AdminVendorDetails />} />
+          <Route path="vendors/:id/bookings" element={<AdminVendorBookings />} />
           <Route path="categories" element={<AdminCategories />} />
           <Route path="categories-form" element={<AdminCategoryForm />} />
           <Route path="categories/edit/:id" element={<AdminCategoryForm />} />

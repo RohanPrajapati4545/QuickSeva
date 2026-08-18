@@ -29,7 +29,9 @@ const AdminServices = () => {
 
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("pending");
+  // Default tab is now "all" so every service shows up first,
+  // with "pending" and the other tabs still available to switch to.
+  const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -118,7 +120,7 @@ const AdminServices = () => {
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
-          {["pending", "approved", "rejected", "all"].map((s) => (
+          {["all", "pending", "approved", "rejected"].map((s) => (
             <span
               key={s}
               onClick={() => setStatusFilter(s)}
@@ -192,8 +194,9 @@ const AdminServices = () => {
 
                 <div className="min-w-0 flex-1">
                   <p className="as-body truncate text-sm font-semibold">{s.service_name}</p>
+                  {/* Vendor's owner name is shown here instead of the shop name */}
                   <p className="as-body truncate text-xs text-[#6B7280]">
-                    {s.vendor?.shop_name || s.vendor?.name || "—"} · {s.category?.category_name || "—"}
+                    {s.vendor?.name || s.vendor?.shop_name || "—"} · {s.category?.category_name || "—"}
                   </p>
                 </div>
 

@@ -40,6 +40,8 @@ const AvdStyles = () => (
     .avd-cta-secondary:hover { background-color: #F3F4F6; }
     .avd-camera-badge { transition: background-color 0.2s ease, transform 0.15s ease; }
     .avd-camera-badge:hover { background-color: #EA580C; transform: scale(1.06); }
+    .avd-stat-link { transition: background-color 0.2s ease, border-color 0.2s ease; cursor: pointer; }
+    .avd-stat-link:hover { background-color: #FFF7ED; border-color: #FDBA74; }
     @keyframes avdSpin { to { transform: rotate(360deg); } }
     .avd-spin { animation: avdSpin 0.8s linear infinite; }
   `}</style>
@@ -249,6 +251,10 @@ const VendorDetails = () => {
     }
   };
 
+  const goToBookings = () => {
+    navigate(`/admin/vendors/${vendorData._id}/bookings`, { state: { vendor: vendorData } });
+  };
+
   if (loading) {
     return (
       <div className="avd-body flex min-h-screen items-center justify-center gap-2 bg-[#F8FAFC] text-sm text-[#6B7280]">
@@ -382,28 +388,29 @@ const VendorDetails = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="avd-body mb-1 block text-sm font-semibold text-[#374151]">
-                    Phone
-                  </label>
-                  <input
-                    type="text"
-                    value={form.contact}
-                    onChange={(e) => setForm({ ...form, contact: e.target.value })}
-                    className="avd-input avd-body w-full rounded-lg border border-[#E5E7EB] px-3.5 py-2.5 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="avd-body mb-1 block text-sm font-semibold text-[#374151]">
-                    Address
-                  </label>
-                  <textarea
-                    value={form.address}
-                    onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    rows={3}
-                    className="avd-input avd-body w-full resize-none rounded-lg border border-[#E5E7EB] px-3.5 py-2.5 text-sm"
-                  />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="avd-body mb-1 block text-sm font-semibold text-[#374151]">
+                      Phone
+                    </label>
+                    <input
+                      type="text"
+                      value={form.contact}
+                      onChange={(e) => setForm({ ...form, contact: e.target.value })}
+                      className="avd-input avd-body w-full rounded-lg border border-[#E5E7EB] px-3.5 py-2.5 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="avd-body mb-1 block text-sm font-semibold text-[#374151]">
+                      Address
+                    </label>
+                    <input
+                      type="text"
+                      value={form.address}
+                      onChange={(e) => setForm({ ...form, address: e.target.value })}
+                      className="avd-input avd-body w-full rounded-lg border border-[#E5E7EB] px-3.5 py-2.5 text-sm"
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -411,10 +418,25 @@ const VendorDetails = () => {
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-[#9CA3AF]">Services</p>
                     <p className="mt-0.5 text-sm font-semibold">{vendorData.totalServices ?? "—"}</p>
                   </div>
-                  <div className="rounded-lg border border-[#F1F5F9] bg-[#F8FAFC] px-3.5 py-2.5">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-[#9CA3AF]">Bookings</p>
-                    <p className="mt-0.5 text-sm font-semibold">{vendorData.totalBookings ?? "—"}</p>
-                  </div>
+
+                  {/* Clicking this takes the admin to the dedicated Bookings
+                      page for this vendor — only services users actually
+                      booked show up there, kept off this page on purpose. */}
+                  <button
+                    type="button"
+                    onClick={goToBookings}
+                    className="avd-stat-link flex items-center justify-between rounded-lg border border-[#F1F5F9] bg-[#F8FAFC] px-3.5 py-2.5 text-left"
+                  >
+                    <span>
+                      <span className="block text-[11px] font-semibold uppercase tracking-wide text-[#9CA3AF]">
+                        Bookings
+                      </span>
+                      <span className="mt-0.5 block text-sm font-semibold">
+                        {vendorData.totalBookings ?? "—"}
+                      </span>
+                    </span>
+                    <i className="fa-solid fa-chevron-right text-xs text-[#F97316]"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -441,6 +463,14 @@ const VendorDetails = () => {
                 className="avd-cta-secondary avd-body rounded-lg border border-[#E5E7EB] bg-white px-5 py-2.5 text-sm font-semibold text-[#374151] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
+              </button>
+              <button
+                type="button"
+                onClick={goToBookings}
+                className="avd-cta-secondary avd-body ml-auto flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-5 py-2.5 text-sm font-semibold text-[#374151]"
+              >
+                <i className="fa-solid fa-calendar-check text-[#F97316]"></i>
+                View Bookings
               </button>
             </div>
           </div>

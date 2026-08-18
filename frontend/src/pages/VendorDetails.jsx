@@ -15,16 +15,12 @@ const getImageUrl = (imagePath) => {
   return `${cleanBase}/${cleanPath}`;
 };
 
-// Services can come back with the photo under a few different keys
-// depending on which endpoint populated them — normalize here so a
-// missing/renamed field never breaks the card (falls back to an icon tile).
+ 
 const getServiceImageUrl = (s) => {
   const raw = s?.image || s?.service_image || s?.photo || s?.images?.[0];
   return getImageUrl(raw);
 };
-
-// Compact star row for cards — filled up to `value` (supports decimals like
-// 4.3 via a width-clipped overlay so it's not just rounded to a whole star).
+ 
 function StarRow({ value = 0, size = "text-[11px]" }) {
   return (
     <div className={`relative inline-flex ${size} leading-none`}>
